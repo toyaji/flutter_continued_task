@@ -2,11 +2,7 @@ import BackgroundTasks
 import Flutter
 import UIKit
 
-/// iOS 26의 `BGContinuedProcessingTask`로 백그라운드 수명을 확보한다.
-///
-/// 앱이 강제 종료되면 태스크는 시스템이 실패로 확정하며, 그 배너는 앱이
-/// 제거할 수 없다. 이를 없애려는 방어 코드를 추가하지 마라 — 닿지 않는다.
-/// 근거: `docs/design/upload/steps/L1-test-matrix.md`
+/// Holds background process lifecycle on iOS 26 using `BGContinuedProcessingTask`.
 public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
 
   public static let channelName = "dev.flutter.continued_task/channel"
@@ -24,13 +20,13 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     instance.registerTaskHandler()
   }
 
-  /// 이전 실행이 남긴 대기 요청이 뒤늦게 전달되는 경우를 가른다.
+  /// Distinguishes late pending requests from previous app launches.
   private var startRequestedInThisSession = false
 
   private func registerTaskHandler() {
     guard #available(iOS 26.0, *) else { return }
 
-    // 이 등록은 앱 기동이 끝나기 전에 이뤄져야 한다.
+    // Must be registered before app launch completes.
     if let permittedIds = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String] {
       for id in permittedIds {
         BGTaskScheduler.shared.register(
@@ -46,7 +42,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
             return
           }
           if !self.startRequestedInThisSession {
-            NSLog("[FlutterContinuedTask] 요청하지 않은 태스크 — 즉시 종료한다")
+            NSLog("[FlutterContinuedTask] Unrequested task - completing immediately")
             continued.setTaskCompleted(success: true)
             return
           }
@@ -68,8 +64,8 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     }
   }
 
-  /// 만료 사유(사용자 중단 / 시스템 회수)를 API가 구분해 주지 않는다.
-  /// 사용자 중단으로 간주한다 — 반대로 오해하면 끈 작업이 되살아난다.
+  /// Expiration reasons (user cancellation vs system reclamation) are not distinguished by the API.
+  /// We treat it as stop requested to avoid reviving stopped work.
   @available(iOS 26.0, *)
   private func finishExpired(_ task: BGContinuedProcessingTask) {
     setActive(nil)
@@ -115,14 +111,14 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     }
 
     guard UIApplication.shared.applicationState == .active else {
-      NSLog("[FlutterContinuedTask] 제출 불가 — 앱이 포그라운드가 아닙니다")
+      NSLog("[FlutterContinuedTask] Cannot submit - app is not in foreground")
       return false
     }
 
-    // 이 시점 이후 핸들러로 들어오는 태스크는 우리가 요청한 것이다.
+    // Tasks entering handler after this point are requested by this session.
     startRequestedInThisSession = true
 
-    let title = args?["title"] as? String ?? "작업 진행 중"
+    let title = args?["title"] as? String ?? "Task in progress"
     let subtitle = args?["subtitle"] as? String ?? ""
 
     let request = BGContinuedProcessingTaskRequest(
@@ -133,10 +129,10 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
 
     do {
       try BGTaskScheduler.shared.submit(request)
-      NSLog("[FlutterContinuedTask] 태스크 제출 성공: %@", self.taskIdentifier)
+      NSLog("[FlutterContinuedTask] Task submitted successfully: %@", self.taskIdentifier)
       return true
     } catch {
-      NSLog("[FlutterContinuedTask] 태스크 제출 거부: %@", error.localizedDescription)
+      NSLog("[FlutterContinuedTask] Task submission rejected: %@", error.localizedDescription)
       return false
     }
   }

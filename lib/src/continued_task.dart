@@ -4,8 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'continued_task_platform_interface.dart';
 import 'models/continued_task_config.dart';
 import 'models/continued_task_state.dart';
+import 'task_tracker.dart';
 
-/// 실행 중인 개별 계속 실행 태스크의 컨트롤러
+/// Controller for an active continued background task.
 class ContinuedTask {
   ContinuedTask._({
     required this.config,
@@ -16,31 +17,31 @@ class ContinuedTask {
     _initEventHandling();
   }
 
-  /// 태스크 생성 시 제공된 초기 설정
+  /// Initial configuration provided when starting the task.
   final ContinuedTaskConfig config;
 
-  /// 사용자가 알림/잠금화면에서 '중단'을 탭했을 때 발화되는 콜백
+  /// Callback triggered when the user taps "Cancel" on system notifications or lock screen.
   void Function()? onUserCancel;
 
-  /// Android 6시간 제한이나 OS 리소스 압박으로 태스크가 강제 종료될 때 발화되는 콜백
+  /// Callback triggered when the OS terminates the task (e.g. Android 6h limit or iOS expiration).
   void Function()? onTimeout;
 
-  /// OS 수명이 실제로 확보(held=true)되거나 해제(held=false)될 때 발화되는 콜백
+  /// Callback triggered when the OS process assertion is acquired (`held = true`) or lost (`held = false`).
   void Function(bool held)? onAssertionChanged;
 
   String get taskId => config.taskId;
 
   bool _isAssertionHeld = false;
 
-  /// 현재 네이티브 레벨에서 프로세스 수명이 실제로 확보되어 있는지 여부
+  /// Whether the process assertion is currently active and held at the native level.
   bool get isAssertionHeld => _isAssertionHeld;
 
   bool _isStopped = false;
 
-  /// 태스크가 이미 종료되었는지 여부
+  /// Whether the task has already been stopped.
   bool get isStopped => _isStopped;
 
-  // --- 비동기 갱신 직렬화 및 최신 값 병합(Coalescing) ---
+  // --- Async update serialization & coalescing ---
   _TaskUpdatePayload? _pendingUpdate;
   Future<void>? _activeUpdateJob;
 
@@ -75,10 +76,10 @@ class ContinuedTask {
     }
   }
 
-  /// 진행률 및 텍스트 갱신.
+  /// Updates progress and metadata.
   /// 
-  /// 고주파 호출 시(예: 초당 100회) 네이티브 채널 과부하를 막기 위해
-  /// 자동으로 직렬화 및 최신 값 병합(Coalescing) 처리가 수행됩니다.
+  /// High-frequency calls (e.g. 100+ calls/sec) are automatically serialized
+  /// and coalesced to prevent MethodChannel IPC saturation.
   Future<void> update({
     required int progress,
     int? maxProgress,
@@ -118,7 +119,7 @@ class ContinuedTask {
     _activeUpdateJob = null;
   }
 
-  /// 태스크를 정상 종료하고 네이티브 수명 및 알림 UI를 해제합니다.
+  /// Stops the task, releasing native assertions and clearing notifications.
   Future<void> stop() async {
     if (_isStopped) return;
     _isStopped = true;
@@ -133,7 +134,7 @@ class ContinuedTask {
     }
   }
 
-  /// 이벤트 리스너를 동적으로 변경합니다.
+  /// Dynamically updates event listeners.
   void setListeners({
     void Function()? onUserCancel,
     void Function()? onTimeout,
@@ -162,45 +163,48 @@ class ContinuedTask {
         break;
     }
   }
-}
 
-class _TaskUpdatePayload {
-  _TaskUpdatePayload({
-    required this.progress,
-    required this.maxProgress,
-    this.title,
-    this.subtitle,
-  });
-
-  final int progress;
-  final int maxProgress;
-  final String? title;
-  final String? subtitle;
-}
-
-/// 계속 실행 태스크(Continued Task) 진입점
-class FlutterContinuedTask {
-  FlutterContinuedTask._();
+  // ---------------------------------------------------------------------------
+  // Static Entry Points & Task Management
+  // ---------------------------------------------------------------------------
 
   static ContinuedTask? _currentTask;
 
-  /// 현재 플랫폼에서 계속 실행 태스크를 지원하는지 여부
+  /// Whether continued tasks are supported on the current platform.
   static bool get isSupported => ContinuedTaskPlatform.instance.isSupported;
 
-  /// 현재 활성화된 태스크 인스턴스 (없으면 null)
+  /// The currently active task instance, or `null` if none.
   static ContinuedTask? get currentTask => _currentTask;
 
-  /// 계속 실행 태스크를 시작하고 네이티브 프로세스 수명을 요청합니다.
+  /// Creates a [TaskTracker] that manages start, update, stop, and IPC
+  /// coalescing automatically based on remaining task count changes.
+  static TaskTracker track({
+    required ContinuedTaskConfig Function(int done, int total) configBuilder,
+    Future<void> Function()? onUserCancel,
+    void Function()? onTimeout,
+    void Function(bool held)? onAssertionChanged,
+    bool autoSyncNativeState = true,
+  }) {
+    return TaskTracker(
+      configBuilder: configBuilder,
+      onUserCancel: onUserCancel,
+      onTimeout: onTimeout,
+      onAssertionChanged: onAssertionChanged,
+      autoSyncNativeState: autoSyncNativeState,
+    );
+  }
+
+  /// Starts a continued task manually and requests native process lifecycle continuation.
   /// 
-  /// - 성공 시: `ContinuedTask` 인스턴스 반환
-  /// - 시작 실패 시(백그라운드 진입 상태 등): `null` 반환 (대기 정책으로 처리 권장)
+  /// - Returns a `ContinuedTask` on success.
+  /// - Returns `null` if rejected (e.g. background execution restrictions).
   static Future<ContinuedTask?> start({
     required ContinuedTaskConfig config,
     void Function()? onUserCancel,
     void Function()? onTimeout,
     void Function(bool held)? onAssertionChanged,
   }) async {
-    // 기존 태스크가 실행 중이면 먼저 정리
+    // If an existing task is running, clean it up first
     if (_currentTask != null && !_currentTask!._isStopped) {
       await _currentTask!.stop();
     }
@@ -220,17 +224,17 @@ class FlutterContinuedTask {
     return task;
   }
 
-  /// 앱 기동 시 네이티브에 남은 현재 상태를 동기화 조회합니다.
+  /// Syncs and retrieves the current native service state on app startup.
   static Future<ContinuedTaskNativeState?> syncNativeState() {
     return ContinuedTaskPlatform.instance.syncState();
   }
 
-  /// 네이티브에 기록된 중단 요청 확인 플래그를 지웁니다.
+  /// Acknowledges and clears any pending stop request recorded on the native side.
   static Future<void> ackStopRequest() {
     return ContinuedTaskPlatform.instance.ackStopRequest();
   }
 
-  /// 현재 실행 중인 태스크(또는 네이티브에 남은 태스크)를 중단합니다.
+  /// Stops the currently running task (or cleans up any dangling native service).
   static Future<void> stopCurrentTask({String taskId = 'upload_task'}) async {
     if (_currentTask != null) {
       await _currentTask!.stop();
@@ -240,9 +244,26 @@ class FlutterContinuedTask {
     }
   }
 
-  /// 테스트 간 전역 상태를 리셋합니다.
+  /// Resets global static state between unit tests.
   @visibleForTesting
   static void resetForTesting() {
     _currentTask = null;
   }
 }
+
+class _TaskUpdatePayload {
+  _TaskUpdatePayload({
+    required this.progress,
+    required this.maxProgress,
+    this.title,
+    this.subtitle,
+  });
+
+  final int progress;
+  final int maxProgress;
+  final String? title;
+  final String? subtitle;
+}
+
+/// Alias for backward compatibility with [ContinuedTask].
+typedef FlutterContinuedTask = ContinuedTask;

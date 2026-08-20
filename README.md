@@ -1,33 +1,52 @@
 # flutter_continued_task
 
-## 지원 범위
+[![pub package](https://img.shields.io/pub/v/flutter_continued_task.svg)](https://pub.dev/packages/flutter_continued_task)
+[![Platform](https://img.shields.io/badge/platform-flutter%20%7C%20android%20%7C%20ios-blue.svg)](https://pub.dev/packages/flutter_continued_task)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-| 플랫폼 | 설치 가능 | **실제 백그라운드 지속** |
-|---|---|---|
-| iOS | 13.0+ | **26.0+** (`BGContinuedProcessingTask`) |
-| Android | API 26+ | **API 26+** (포그라운드 서비스 `dataSync`) |
-
-**설치 하한과 동작 하한이 다르다.** iOS 26 미만에서는 `start()`가 `false`를 돌려주고 아무것도 하지 않는다 — 예외를 던지지 않으므로 호출부는 분기 없이 그대로 쓰면 되고, 그 구간에서는 앱이 백그라운드로 가면 작업이 멈췄다가 복귀 시 이어가는 동작으로 자연히 떨어진다.
-
-설치 하한을 동작 하한까지 올리지 않는 이유: CocoaPods는 의존성의 `s.platform`이 앱의 deployment target보다 높으면 **해석 단계에서 거부**한다. iOS 17을 지원하는 앱이 이 패키지를 아예 쓸 수 없게 된다.
-
-
-A powerful Flutter plugin designed to keep long-running tasks alive when the app moves to the background, preventing OS suspension and network reclamation while synchronizing progress to system notifications and the lock screen.
+A robust Flutter plugin to keep long-running tasks alive when the app moves to the background, preventing OS process suspension and socket reclamation while synchronizing progress to system notifications, lock screens, and Dynamic Island.
 
 ---
 
-## 🌟 Features
+## 🌟 Why `flutter_continued_task`?
 
-- **Process Lifecycle Continuation**: Keeps the app process and network connections active when transitioned to the background.
-- **Android `dataSync` Foreground Service**:
-  - Ongoing low-priority progress notifications (`setProgress`).
-  - Optional user cancel action button ("중단").
-  - Automated 6-hour timeout guard (`onTimeout`) to prevent `RemoteServiceException`.
-- **iOS 26+ `BGContinuedProcessingTask`**:
+When a mobile app moves to the background during long-running tasks (such as photo/video batch uploads, file synchronization, database migrations, or on-device AI inference):
+1. **OS Process Suspension**: iOS and Android rapidly suspend or kill background apps unless an ongoing task assertion or foreground service is explicitly held.
+2. **High-Frequency IPC Thrashing**: Rapid progress events (e.g. enqueueing 10+ items synchronously) can flood Flutter's `MethodChannel` and flicker native notifications (`0/1 -> 0/2 -> ...`).
+3. **Lifecycle Edge Cases**: Handling user cancel button taps on notifications, Android 6h `dataSync` timeouts, and app termination recovery requires complex boilerplate.
+
+`flutter_continued_task` solves all of this with a **zero-boilerplate high-level API (`ContinuedTask.track`)** and a **flexible low-level API (`ContinuedTask.start`)**.
+
+---
+
+## ✨ Features
+
+- 🛡️ **Guaranteed Process Continuation**: Prevents OS suspension and network reclamation in the background.
+- 🤖 **Android `dataSync` Foreground Service**:
+  - Ongoing system progress notifications (`setProgress`).
+  - Native "Cancel" action button on notifications.
+  - Automatic 6-hour timeout guard to prevent `RemoteServiceException`.
+- 🍎 **iOS 26+ `BGContinuedProcessingTask`**:
   - Native lock screen and Dynamic Island progress tracking.
-  - Distinguishes user cancellation from system resource expiration.
-- **Coalescing & Throttling Queue**: Automatically serializes high-frequency progress updates (up to 100+ updates/sec) to avoid MethodChannel overhead while guaranteeing final progress delivery.
-- **Generic & Unopinionated**: Works seamlessly with large file uploads, local database backups, on-device AI inference, video rendering, and more.
+  - Swift Package Manager (SPM) & CocoaPods dual support.
+- ⚡ **Automated High-Frequency Coalescing (`_drain`)**: Synchronous rapid updates are coalesced into a single IPC call, preventing "0/1" flicker and starting immediately with true batch totals (e.g. "0/9").
+- 🔄 **Smart Batch Life-Cycle Management**:
+  - `0 -> N`: Automatically requests OS process assertion & starts foreground service.
+  - `N -> M`: Automatically updates progress.
+  - `N -> 0`: Guarantees 100% completion update (`N/N`) before stopping the service.
+  - Mid-flight additions: Automatically increments the batch total if new items are queued.
+- 🔌 **Native State Recovery**: Automatically pulls native state (`assertionHeld`, `stopRequested`) on app cold start.
+
+---
+
+## 📱 Platform Support
+
+| Platform | Install Target | **Active Background Continuation** | Underlying Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Android** | Android 5.0+ (API 21+) | **Android 8.0+ (API 26+)** | `ForegroundService` (`dataSync`) with 6h guard |
+| **iOS** | iOS 13.0+ | **iOS 26.0+** | `BGContinuedProcessingTask` & Lock Screen Progress |
+
+> **Note on Compatibility**: Below runtime minimums (e.g. iOS < 26.0), `ContinuedTask.start()` gracefully returns `false` / no-op without throwing errors, letting tasks run normally in the foreground and pause naturally in the background.
 
 ---
 
@@ -42,110 +61,146 @@ dependencies:
 
 ---
 
-## 🛠️ iOS Setup
+## 🛠️ Platform Setup
 
-iOS requires `BGTaskSchedulerPermittedIdentifiers` and `UIBackgroundModes` declared in `ios/Runner/Info.plist`. You can configure this automatically using the built-in CLI:
+### 1. Android Setup
 
-```bash
-# Run from the root of your Flutter project:
-dart run flutter_continued_task:setup your.custom.task.identifier
+Add the required foreground service permissions to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Android 9+ (API 28+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required for Android 14+ (API 34+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Required for Android 13+ (API 33+) Notification Permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application ...>
+        <!-- flutter_continued_task Foreground Service is auto-manifest-merged! -->
+    </application>
+</manifest>
+```
+
+### 2. iOS Setup
+
+iOS requires `BGContinuedProcessingTask` permitted identifiers in `ios/Runner/Info.plist`:
+
+```xml
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>your.bundle.id.upload</string>
+</array>
+<key>UIBackgroundModes</key>
+<array>
+    <string>processing</string>
+</array>
 ```
 
 ---
 
-## 🚀 Usage
+## 🚀 Quickstart
 
-### 1. Start a Continued Task
+### Approach 1: High-Level API (`ContinuedTask.track`) — *Recommended*
 
-Start a task while the app is in the foreground (e.g., when the user initiates an upload or backup):
+The easiest and most robust way. Create a tracker once, then simply call `tracker.sync(remainingCount)` whenever your queue changes. Everything else is automated:
 
 ```dart
 import 'package:flutter_continued_task/flutter_continued_task.dart';
 
-final task = await FlutterContinuedTask.start(
-  config: const ContinuedTaskConfig(
-    taskId: 'upload_batch_1',
-    title: 'Uploading Photos',
-    subtitle: '0 / 10',
-    initialProgress: 0,
-    maxProgress: 10,
-    allowCancel: true,
-    cancelActionLabel: 'Cancel',
-    // Built-in presets: 'upload', 'download', 'sync', 'processing'
-    // Or pass your custom drawable name (e.g. 'ic_my_custom_icon')
-    androidNotificationIcon: 'upload',
-    androidChannelId: 'upload_progress',
-    androidChannelName: 'Photo Upload',
-    iosTaskIdentifier: 'co.zelly.flutter.upload',
-  ),
-  onUserCancel: () {
-    print('User tapped cancel on system notification');
-    // Pause or hold your work queue
-  },
-  onTimeout: () {
-    print('OS time limit reached (Android 6h or iOS expiration)');
-    // Defer remaining work for next app launch
-  },
-  onAssertionChanged: (held) {
-    print('OS lifecycle assertion held: $held');
-  },
-);
-```
+class UploadService {
+  late final TaskTracker _tracker;
 
-### 2. Update Progress
-
-Progress updates are automatically coalesced and serialized. You can safely call this in high-frequency loops:
-
-```dart
-await task?.update(
-  progress: 3,
-  maxProgress: 10,
-  title: 'Uploading Photos (3/10)',
-  subtitle: '3 / 10',
-);
-```
-
-### 3. Stop the Task
-
-When the operation finishes, stop the task to release native resources and dismiss the notification:
-
-```dart
-await task?.stop();
-```
-
-### 4. Sync Native State on App Launch
-
-If the app was terminated while the background service was running, pull the native fact on next app startup:
-
-```dart
-final state = await FlutterContinuedTask.syncNativeState();
-if (state != null) {
-  if (state.assertionHeld) {
-    print('Service is still running in the background');
+  void initialize() {
+    _tracker = ContinuedTask.track(
+      configBuilder: (done, total) => ContinuedTaskConfig(
+        taskId: 'upload_task',
+        title: total > 0 ? 'Uploading Photos ($done/$total)' : 'Uploading Photos',
+        subtitle: total > 0 ? '$done/$total' : null,
+        initialProgress: done,
+        maxProgress: total.clamp(1, 999999),
+        allowCancel: true,
+        cancelActionLabel: 'Cancel',
+        androidNotificationIcon: 'upload', // Built-in: 'upload', 'download', 'sync', 'processing'
+        androidChannelId: 'upload_progress',
+        androidChannelName: 'Upload Progress',
+        iosTaskIdentifier: 'your.bundle.id.upload',
+      ),
+      onUserCancel: () async {
+        print('User tapped cancel on notification!');
+        // Pause or cancel your internal upload queue
+      },
+      onTimeout: () {
+        print('OS timeout reached (Android 6h limit)');
+      },
+      onAssertionChanged: (held) {
+        print('OS assertion active: $held');
+      },
+    );
   }
-  if (state.stopRequested) {
-    print('User requested stop while app was detached');
-    await FlutterContinuedTask.ackStopRequest();
+
+  /// Call this whenever your pending queue count changes:
+  /// - 0 -> 9: Starts foreground task as "0/9" (no "0/1" flicker)
+  /// - 9 -> 8: Updates progress to "1/9"
+  /// - 1 -> 0: Sends final "9/9" update and automatically stops task
+  Future<void> onQueueUpdated(int remainingCount) {
+    return _tracker.sync(remainingCount);
+  }
+
+  void dispose() {
+    _tracker.dispose();
   }
 }
 ```
 
 ---
 
-## 📚 Platform Support
+### Approach 2: Low-Level API (`ContinuedTask.start`)
 
-| Platform | Min OS Version | Mechanism |
-| :--- | :--- | :--- |
-| **Android** | Android 8.0+ (API 26+) | `ForegroundService` (`dataSync` with 6h timeout guard) |
-| **iOS** | iOS 26.0+ | `BGContinuedProcessingTask` & Lock Screen Progress |
+If you want full manual control over start, update, and stop:
+
+```dart
+import 'package:flutter_continued_task/flutter_continued_task.dart';
+
+// 1. Check platform support
+if (!ContinuedTask.isSupported) return;
+
+// 2. Start manual task
+final task = await ContinuedTask.start(
+  config: const ContinuedTaskConfig(
+    taskId: 'custom_task_1',
+    title: 'Processing Video',
+    maxProgress: 100,
+    allowCancel: true,
+    iosTaskIdentifier: 'your.bundle.id.upload',
+  ),
+  onUserCancel: () => print('User canceled'),
+  onTimeout: () => print('Timed out'),
+  onAssertionChanged: (held) => print('Assertion: $held'),
+);
+
+// 3. Update progress (automatically serialized and throttled)
+await task?.update(progress: 45, maxProgress: 100, subtitle: '45%');
+
+// 4. Stop when finished
+await task?.stop();
+```
 
 ---
 
-## 🧪 Testing
+## 🧪 Comprehensive Testing
 
-This package includes a full standalone test suite:
+This package includes a standalone unit & integration test suite covering all lifecycle and concurrency scenarios:
 
 ```bash
 cd packages/flutter_continued_task
 flutter test
 ```
+
+You can also run the interactive test dashboard in `packages/flutter_continued_task/example` to visually test rapid batch coalescing, mid-flight additions, and notification cancel actions on an emulator or real device.
+
+---
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.

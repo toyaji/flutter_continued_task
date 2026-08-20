@@ -17,7 +17,7 @@ void main(List<String> args) {
   if (args.isNotEmpty) {
     taskIdentifier = args.first;
   } else {
-    // Info.plist에서 CFBundleIdentifier를 읽거나 기본값 유추
+    // Read CFBundleIdentifier from Info.plist or use default
     print('ℹ️  No task identifier provided. Using default "$taskIdentifier".');
     print('   Tip: You can pass your custom task identifier: dart run flutter_continued_task:setup your.custom.task.id');
   }
@@ -26,7 +26,7 @@ void main(List<String> args) {
     var content = infoPlistFile.readAsStringSync();
     var modified = false;
 
-    // 1. UIBackgroundModes에 'processing' 추가
+    // 1. Add 'processing' to UIBackgroundModes
     if (!content.contains('<key>UIBackgroundModes</key>')) {
       final insertIndex = content.lastIndexOf('</dict>');
       if (insertIndex != -1) {
@@ -51,7 +51,7 @@ void main(List<String> args) {
       }
     }
 
-    // 2. BGTaskSchedulerPermittedIdentifiers에 태스크 식별자 추가
+    // 2. Add task identifier to BGTaskSchedulerPermittedIdentifiers
     if (!content.contains('<key>BGTaskSchedulerPermittedIdentifiers</key>')) {
       final insertIndex = content.lastIndexOf('</dict>');
       if (insertIndex != -1) {

@@ -18,15 +18,15 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  /// 현재 플랫폼에서 계속 실행 태스크를 지원하는지 여부
+  /// Whether continued background execution is supported on the current platform.
   bool get isSupported => false;
 
-  /// 태스크 시작 요청 (성공 시 true, 불가 시 false)
+  /// Requests to start a continued task. Returns true on success, false if rejected.
   Future<bool> start(ContinuedTaskConfig config) {
     throw UnimplementedError('start() has not been implemented.');
   }
 
-  /// 진행률 및 텍스트 갱신
+  /// Updates progress and metadata.
   Future<bool> update({
     required String taskId,
     required int progress,
@@ -37,22 +37,22 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
     throw UnimplementedError('update() has not been implemented.');
   }
 
-  /// 태스크 종료
+  /// Stops the task and clears native foreground resources.
   Future<void> stop({required String taskId}) {
     throw UnimplementedError('stop() has not been implemented.');
   }
 
-  /// 네이티브 상태 동기화 조회 (미지원 또는 응답 없을 시 null)
+  /// Syncs and retrieves native state.
   Future<ContinuedTaskNativeState?> syncState() {
     throw UnimplementedError('syncState() has not been implemented.');
   }
 
-  /// 중단 요청 확인 플래그 리셋
+  /// Clears the acknowledged stop request flag on the native side.
   Future<void> ackStopRequest() {
     throw UnimplementedError('ackStopRequest() has not been implemented.');
   }
 
-  /// 네이티브 이벤트 핸들러 등록
+  /// Registers native lifecycle event handlers.
   void setEventHandlers({
     required void Function(String event) onEvent,
   }) {

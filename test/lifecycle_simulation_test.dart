@@ -63,12 +63,12 @@ void main() {
       expect(task, isNotNull);
       expect(task!.isAssertionHeld, isFalse);
 
-      // 1. 네이티브에서 FGS / BGContinuedProcessingTask 확보 성공 시뮬레이션
+      // 1. Simulate native FGS / BGContinuedProcessingTask acquisition
       mockPlatform.triggerEvent('assertionAcquired');
       expect(task.isAssertionHeld, isTrue);
       expect(heldHistory, equals([true]));
 
-      // 2. Doze 모드 종료 / 태스크 종료로 수명 해제 시뮬레이션
+      // 2. Simulate assertion lost due to completion or OS reclaim
       mockPlatform.triggerEvent('assertionLost');
       expect(task.isAssertionHeld, isFalse);
       expect(heldHistory, equals([true, false]));
@@ -85,7 +85,7 @@ void main() {
       );
       expect(task, isNotNull);
 
-      // 알림 UI에서 "중단" 액션 클릭 이벤트 시뮬레이션
+      // Simulate notification cancel action click
       mockPlatform.triggerEvent('stopRequested');
       expect(userCancelFired, isTrue);
     });
@@ -103,11 +103,11 @@ void main() {
       );
       expect(task, isNotNull);
 
-      // 먼저 확보된 상태로 설정
+      // Set to acquired state first
       mockPlatform.triggerEvent('assertionAcquired');
       expect(task!.isAssertionHeld, isTrue);
 
-      // 6시간 상한 도달 시뮬레이션
+      // Simulate timeout reached
       mockPlatform.triggerEvent('timeout');
       expect(timeoutFired, isTrue);
       expect(task.isAssertionHeld, isFalse);

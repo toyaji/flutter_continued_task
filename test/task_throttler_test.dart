@@ -63,19 +63,18 @@ void main() {
 
     mockPlatform.delayCompleter = Completer<void>();
 
-    // 짧은 시간 동안 50번의 update를 비동기로 연속 발사
+    // Dispatch 50 rapid async updates in short succession
     final futures = <Future<void>>[];
     for (int i = 1; i <= 50; i++) {
       futures.add(task!.update(progress: i, maxProgress: 50));
     }
 
-    // 첫 번째 update가 진행 중인 동안 나머지가 큐에 쌓임
+    // While the first update is processing, subsequent updates coalesce in the queue
     mockPlatform.delayCompleter!.complete();
     await Future.wait(futures);
 
-    // 50번의 호출 중 불필요한 중간 값은 병합(Coalesced)되고,
-    // 전체 네이티브 호출 횟수는 50번보다 현저히 적으면서
-    // 마지막 값(50)은 반드시 도달해야 함.
+    // Intermediate values are coalesced, resulting in far fewer than 50 native calls,
+    // while guaranteeing the final value (50) is reached.
     expect(mockPlatform.processedProgresses.last, 50);
     expect(mockPlatform.processedProgresses.length, lessThan(50));
   });

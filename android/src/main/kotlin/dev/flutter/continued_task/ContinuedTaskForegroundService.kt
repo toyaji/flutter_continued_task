@@ -13,8 +13,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 
 /**
- * 포그라운드에서 시작된 긴 작업이 백그라운드에서도 중단되지 않도록
- * 프로세스 수명을 유지하고 알림 UI를 표시하는 포그라운드 서비스.
+ * Foreground Service that holds process lifecycle continuation
+ * and displays an ongoing notification during long-running tasks.
  */
 class ContinuedTaskForegroundService : Service() {
 
@@ -42,23 +42,23 @@ class ContinuedTaskForegroundService : Service() {
         const val PREFS_NAME = "continued_task_prefs"
         const val KEY_STOP_REQUESTED = "stop_requested_while_detached"
 
-        /** 서비스 -> Dart 이벤트 리스너 */
+        /** Service -> Dart event listener */
         @JvmStatic
         var eventListener: ((String) -> Unit)? = null
 
-        /** 현재 FGS 수명 확보 여부 */
+        /** Whether the FGS process assertion is currently held */
         @JvmStatic
         var isAssertionHeld: Boolean = false
             private set
     }
 
-    private var currentTitle: String = "작업 진행 중"
+    private var currentTitle: String = "Task in progress"
     private var currentSubtitle: String? = null
     private var currentProgress: Int = 0
     private var currentMaxProgress: Int = 100
     private var currentIndeterminate: Boolean = false
     private var currentAllowCancel: Boolean = true
-    private var currentCancelLabel: String = "중단"
+    private var currentCancelLabel: String = "Cancel"
     private var currentIconName: String? = null
     private var currentChannelId: String = "continued_task_channel"
     private var currentChannelName: String = "Background Task"
@@ -78,7 +78,7 @@ class ContinuedTaskForegroundService : Service() {
                 if (listener != null) {
                     listener.invoke("stopRequested")
                 } else {
-                    // 액티비티가 파기된 상태에서 사용자가 중단을 누른 경우 다음 기동에 복구하도록 기록
+                    // Record in preferences to recover on next launch if activity was destroyed
                     getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         .edit()
                         .putBoolean(KEY_STOP_REQUESTED, true)
@@ -108,7 +108,6 @@ class ContinuedTaskForegroundService : Service() {
         intent.getStringExtra(EXTRA_CHANNEL_DESC)?.let { currentChannelDesc = it }
     }
 
-    /** `android:stopWithTask` 기본값이 false라 작업이 제거돼도 서비스는 남는다. */
     override fun onTaskRemoved(rootIntent: Intent?) {
         stopSelfCompat()
         super.onTaskRemoved(rootIntent)
@@ -182,7 +181,7 @@ class ContinuedTaskForegroundService : Service() {
             if (resId != 0) return resId
         }
 
-        // 기본 번들 동기화 아이콘 -> 앱 아이콘 -> 시스템 기본값 순으로 폴백
+        // Fallback: bundled sync icon -> app launcher icon -> android system upload icon
         val defaultSyncId = resources.getIdentifier("ic_continued_task_sync", "drawable", packageName)
         if (defaultSyncId != 0) return defaultSyncId
 

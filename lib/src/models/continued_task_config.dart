@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// 계속 실행 태스크의 초기 설정 모델
+/// Configuration model for starting a continued background task.
 @immutable
 class ContinuedTaskConfig {
   const ContinuedTaskConfig({
@@ -11,7 +11,7 @@ class ContinuedTaskConfig {
     this.maxProgress = 100,
     this.indeterminate = false,
     this.allowCancel = true,
-    this.cancelActionLabel = '중단',
+    this.cancelActionLabel = 'Cancel',
     this.androidNotificationIcon,
     this.androidChannelId = 'continued_task_channel',
     this.androidChannelName = 'Background Task',
@@ -19,44 +19,44 @@ class ContinuedTaskConfig {
     this.iosTaskIdentifier,
   });
 
-  /// 태스크 고유 식별자 (기본값: 'default_task')
+  /// Unique task identifier (defaults to 'default_task').
   final String taskId;
 
-  /// 시스템 알림 및 잠금화면에 노출될 메인 제목
+  /// Main title displayed on system notifications and lock screen.
   final String title;
 
-  /// 시스템 알림 및 잠금화면에 노출될 보조 설명/부제목
+  /// Subtitle or secondary description displayed on system notifications and lock screen.
   final String? subtitle;
 
-  /// 초기 진행률 값
+  /// Initial progress value.
   final int initialProgress;
 
-  /// 최대 진행률 값
+  /// Maximum progress value.
   final int maxProgress;
 
-  /// 진행률 불특정(스피너) 여부
+  /// Whether the progress is indeterminate (spinner style).
   final bool indeterminate;
 
-  /// 알림 UI에 사용자 '중단' 액션 버튼을 노출할지 여부
+  /// Whether to display a user "Cancel" action button on the system notification.
   final bool allowCancel;
 
-  /// 사용자 중단 액션 버튼의 라벨 (예: "중단", "취소", "Cancel")
+  /// Label for the cancel action button (defaults to 'Cancel').
   final String cancelActionLabel;
 
-  /// Android 알림 아이콘 drawable 리소스명 또는 프리셋 키워드('upload', 'download', 'sync', 'processing').
-  /// null일 경우 기본 동기화 벡터 아이콘('ic_continued_task_sync')이 자동 적용됩니다.
+  /// Android notification icon drawable resource name or preset keyword ('upload', 'download', 'sync', 'processing').
+  /// Defaults to 'ic_continued_task_sync' if null.
   final String? androidNotificationIcon;
 
-  /// Android 알림 채널 ID
+  /// Android notification channel ID.
   final String androidChannelId;
 
-  /// Android 알림 채널 이름
+  /// Android notification channel name.
   final String androidChannelName;
 
-  /// Android 알림 채널 설명
+  /// Android notification channel description.
   final String androidChannelDescription;
 
-  /// iOS `BGContinuedProcessingTask` 식별자 (Info.plist의 `BGTaskSchedulerPermittedIdentifiers`와 일치해야 함)
+  /// iOS `BGContinuedProcessingTask` identifier (must match `BGTaskSchedulerPermittedIdentifiers` in `Info.plist`).
   final String? iosTaskIdentifier;
 
   Map<String, dynamic> toMap() {

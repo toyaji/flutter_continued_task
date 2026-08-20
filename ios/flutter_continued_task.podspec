@@ -12,14 +12,11 @@ A Flutter plugin to ensure process lifecycle continuation and progress synchroni
   s.homepage         = 'https://github.com/zellypaw/zelly-flutter'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Zelly' => 'contact@zellypaw.com' }
-  s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'flutter_continued_task/Sources/flutter_continued_task/**/*'
   s.dependency 'Flutter'
-  # **설치 하한과 동작 하한이 다르다.**
-  # 여기(설치 하한)는 낮게 둔다 — 올리면 deployment target이 더 낮은 앱은
-  # CocoaPods가 의존성 해석 단계에서 거부해 **빌드 자체가 불가능**해진다.
-  # 실제 동작 하한은 iOS 26(BGContinuedProcessingTask 도입)이며, 그 아래에서는
-  # `#available` 가드로 조용히 no-op이 된다(`start`가 false를 돌려준다).
+  # Note: The deployment target here is kept low (13.0) to ensure CocoaPods dependency resolution passes.
+  # The actual runtime requirement is iOS 26 (when BGContinuedProcessingTask is available);
+  # on earlier versions, it safely falls back to a no-op returning false.
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
