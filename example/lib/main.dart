@@ -184,6 +184,9 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
     final done = (total - _unfinished).clamp(0, total);
     final progressRatio = total > 0 ? (done / total) : 0.0;
     final isRunning = _tracker.isSubmitted || _unfinished > 0;
+    final progressStyle = Theme.of(
+      context,
+    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -201,11 +204,7 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Progress: $done / $total',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
+                      Text('Progress: $done / $total', style: progressStyle),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
