@@ -146,7 +146,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
   private func stop() {
     guard #available(iOS 26.0, *) else { return }
 
-    BGTaskScheduler.shared.cancelTaskRequest(withIdentifier: self.taskIdentifier)
+    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: self.taskIdentifier)
 
     guard let task = activeTask as? BGContinuedProcessingTask else { return }
     setActive(nil)

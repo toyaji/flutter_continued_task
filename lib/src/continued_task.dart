@@ -52,13 +52,15 @@ class ContinuedTask {
             _setAssertionHeld(true);
             break;
           case 'assertionLost':
-            _setAssertionHeld(false);
+            _isAssertionHeld = false;
+            onAssertionChanged?.call(false);
             break;
           case 'stopRequested':
             onUserCancel?.call();
             break;
           case 'timeout':
-            _setAssertionHeld(false);
+            _isAssertionHeld = false;
+            onAssertionChanged?.call(false);
             onTimeout?.call();
             break;
         }
@@ -182,6 +184,9 @@ class FlutterContinuedTask {
 
   static ContinuedTask? _currentTask;
 
+  /// 현재 플랫폼에서 계속 실행 태스크를 지원하는지 여부
+  static bool get isSupported => ContinuedTaskPlatform.instance.isSupported;
+
   /// 현재 활성화된 태스크 인스턴스 (없으면 null)
   static ContinuedTask? get currentTask => _currentTask;
 
@@ -225,11 +230,19 @@ class FlutterContinuedTask {
     return ContinuedTaskPlatform.instance.ackStopRequest();
   }
 
-  /// 현재 실행 중인 태스크를 즉시 중단합니다.
-  static Future<void> stopCurrentTask() async {
+  /// 현재 실행 중인 태스크(또는 네이티브에 남은 태스크)를 중단합니다.
+  static Future<void> stopCurrentTask({String taskId = 'upload_task'}) async {
     if (_currentTask != null) {
       await _currentTask!.stop();
       _currentTask = null;
+    } else {
+      await ContinuedTaskPlatform.instance.stop(taskId: taskId);
     }
+  }
+
+  /// 테스트 간 전역 상태를 리셋합니다.
+  @visibleForTesting
+  static void resetForTesting() {
+    _currentTask = null;
   }
 }

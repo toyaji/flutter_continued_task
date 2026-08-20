@@ -8,6 +8,9 @@ class LifecycleMockPlatform
   void Function(String event)? eventCallback;
 
   @override
+  bool get isSupported => true;
+
+  @override
   Future<bool> start(ContinuedTaskConfig config) async => true;
 
   @override

@@ -10,6 +10,9 @@ class SlowMockContinuedTaskPlatform
   Completer<void>? delayCompleter;
 
   @override
+  bool get isSupported => true;
+
+  @override
   Future<bool> start(ContinuedTaskConfig config) async => true;
 
   @override

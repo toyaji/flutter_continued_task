@@ -18,6 +18,9 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  /// 현재 플랫폼에서 계속 실행 태스크를 지원하는지 여부
+  bool get isSupported => false;
+
   /// 태스크 시작 요청 (성공 시 true, 불가 시 false)
   Future<bool> start(ContinuedTaskConfig config) {
     throw UnimplementedError('start() has not been implemented.');

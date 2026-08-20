@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -6,6 +8,12 @@ import 'models/continued_task_config.dart';
 import 'models/continued_task_state.dart';
 
 class MethodChannelContinuedTask extends ContinuedTaskPlatform {
+  @override
+  bool get isSupported =>
+      !kIsWeb &&
+      !const bool.fromEnvironment('NO_BG_ASSERTION') &&
+      (Platform.isAndroid || Platform.isIOS);
+
   @visibleForTesting
   final MethodChannel methodChannel =
       const MethodChannel('dev.flutter.continued_task/channel');

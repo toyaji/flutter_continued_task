@@ -1,5 +1,17 @@
 # flutter_continued_task
 
+## 지원 범위
+
+| 플랫폼 | 설치 가능 | **실제 백그라운드 지속** |
+|---|---|---|
+| iOS | 13.0+ | **26.0+** (`BGContinuedProcessingTask`) |
+| Android | API 26+ | **API 26+** (포그라운드 서비스 `dataSync`) |
+
+**설치 하한과 동작 하한이 다르다.** iOS 26 미만에서는 `start()`가 `false`를 돌려주고 아무것도 하지 않는다 — 예외를 던지지 않으므로 호출부는 분기 없이 그대로 쓰면 되고, 그 구간에서는 앱이 백그라운드로 가면 작업이 멈췄다가 복귀 시 이어가는 동작으로 자연히 떨어진다.
+
+설치 하한을 동작 하한까지 올리지 않는 이유: CocoaPods는 의존성의 `s.platform`이 앱의 deployment target보다 높으면 **해석 단계에서 거부**한다. iOS 17을 지원하는 앱이 이 패키지를 아예 쓸 수 없게 된다.
+
+
 A powerful Flutter plugin designed to keep long-running tasks alive when the app moves to the background, preventing OS suspension and network reclamation while synchronizing progress to system notifications and the lock screen.
 
 ---

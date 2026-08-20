@@ -17,6 +17,9 @@ class MockContinuedTaskPlatform
   void Function(String event)? eventHandler;
 
   @override
+  bool get isSupported => true;
+
+  @override
   Future<bool> start(ContinuedTaskConfig config) async {
     startedConfig = config;
     return startResult;
