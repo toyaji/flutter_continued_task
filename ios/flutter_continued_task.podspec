@@ -10,8 +10,9 @@ Pod::Spec.new do |s|
 A Flutter plugin to ensure process lifecycle continuation and progress synchronization during long-running tasks in background across Android and iOS.
                        DESC
   s.homepage         = 'https://github.com/zellypaw/zelly-flutter'
-  s.license          = { :file => '../LICENSE' }
+  s.license          = { :type => 'MIT', :file => '../LICENSE' }
   s.author           = { 'Zelly' => 'contact@zellypaw.com' }
+  s.source           = { :path => '.' }
   s.source_files = 'flutter_continued_task/Sources/flutter_continued_task/**/*'
   s.dependency 'Flutter'
   # Note: The deployment target here is kept low (13.0) to ensure CocoaPods dependency resolution passes.

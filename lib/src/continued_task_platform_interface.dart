@@ -38,7 +38,7 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
   }
 
   /// Stops the task and clears native foreground resources.
-  Future<void> stop({required String taskId}) {
+  Future<void> stop({required String taskId, bool success = true}) {
     throw UnimplementedError('stop() has not been implemented.');
   }
 

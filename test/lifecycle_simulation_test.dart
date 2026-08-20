@@ -23,7 +23,7 @@ class LifecycleMockPlatform
   }) async => true;
 
   @override
-  Future<void> stop({required String taskId}) async {}
+  Future<void> stop({required String taskId, bool success = true}) async {}
 
   @override
   Future<ContinuedTaskNativeState?> syncState() async =>

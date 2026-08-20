@@ -50,9 +50,12 @@ class _RecordingPlatform
     return true;
   }
 
+  bool? lastStopSuccess;
+
   @override
-  Future<void> stop({required String taskId}) async {
+  Future<void> stop({required String taskId, bool success = true}) async {
     calls.add('stop');
+    lastStopSuccess = success;
   }
 
   @override
@@ -112,26 +115,32 @@ void main() {
 
       await tracker.sync(0);
       check(mock.calls).deepEquals(['start', 'update', 'stop']);
-      check(mock.updateArgs.last['progress']).equals(3);
-      check(mock.updateArgs.last['maxProgress']).equals(3);
+      final lastUpdate = mock.updateArgs.last;
+      check(lastUpdate['progress']).equals(3);
+      check(lastUpdate['maxProgress']).equals(3);
+      check(lastUpdate['title']).equals('Testing (3/3)');
+      check(lastUpdate['subtitle']).equals('3/3');
+      check(mock.lastStopSuccess).equals(true);
       check(tracker.isSubmitted).isFalse();
       check(tracker.batchTotal).equals(0);
     });
 
-    test('Final update matches total on completion - never ends at partial progress', () async {
+    test('cancel() immediately stops ongoing task without sending fake 100% update', () async {
       await tracker.sync(9);
-      for (var remaining = 8; remaining >= 1; remaining--) {
+      for (var remaining = 8; remaining >= 5; remaining--) {
         await tracker.sync(remaining);
       }
-      check(mock.updateArgs.last['progress']).equals(8);
+      check(mock.updateArgs.last['progress']).equals(4);
 
-      await tracker.sync(0);
+      // User calls cancel() mid-flight
+      await tracker.cancel();
 
       check(mock.calls.last).equals('stop');
-      check(mock.calls[mock.calls.length - 2]).equals('update');
-      final lastUpdate = mock.updateArgs.last;
-      check(lastUpdate['progress']).equals(9);
-      check(lastUpdate['maxProgress']).equals(9);
+      // Last update remains 4, never falsely updated to 9
+      check(mock.updateArgs.last['progress']).equals(4);
+      check(mock.lastStopSuccess).equals(false);
+      check(tracker.isSubmitted).isFalse();
+      check(tracker.batchTotal).equals(0);
     });
 
     test('Rapid consecutive calls coalesce into a single start with final count', () async {

@@ -150,9 +150,14 @@ class UploadService {
   /// Call this whenever your pending queue count changes:
   /// - 0 -> 9: Starts foreground task as "0/9" (no "0/1" flicker)
   /// - 9 -> 8: Updates progress to "1/9"
-  /// - 1 -> 0: Sends final "9/9" update and automatically stops task
+  /// - 1 -> 0: Sends final "9/9" update and automatically stops task (100% completed)
   Future<void> onQueueUpdated(int remainingCount) {
     return _tracker.sync(remainingCount);
+  }
+
+  /// Call this when the user cancels or aborts the entire batch mid-flight:
+  Future<void> cancelQueue() {
+    return _tracker.cancel();
   }
 
   void dispose() {

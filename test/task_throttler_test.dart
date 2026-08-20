@@ -31,7 +31,7 @@ class SlowMockContinuedTaskPlatform
   }
 
   @override
-  Future<void> stop({required String taskId}) async {}
+  Future<void> stop({required String taskId, bool success = true}) async {}
 
   @override
   Future<ContinuedTaskNativeState?> syncState() async {
@@ -77,5 +77,32 @@ void main() {
     // while guaranteeing the final value (50) is reached.
     expect(mockPlatform.processedProgresses.last, 50);
     expect(mockPlatform.processedProgresses.length, lessThan(50));
+  });
+
+  test('Immediate stop after rapid update guarantees final progress is flushed to native', () async {
+    final task = await FlutterContinuedTask.start(
+      config: const ContinuedTaskConfig(title: 'Flush Test'),
+    );
+    expect(task, isNotNull);
+
+    mockPlatform.delayCompleter = Completer<void>();
+
+    // Start in-flight update with 8
+    final f8 = task!.update(progress: 8, maxProgress: 9);
+
+    // Queue 9 immediately while 8 is still in-flight
+    final f9 = task.update(progress: 9, maxProgress: 9);
+
+    // Stop is called immediately
+    final fStop = task.stop();
+
+    // Release the delay so processing unblocks
+    mockPlatform.delayCompleter!.complete();
+
+    await Future.wait([f8, f9, fStop]);
+
+    // The final value (9) MUST be processed before stopping, never dropped
+    expect(mockPlatform.processedProgresses.last, 9);
+    expect(task.isStopped, isTrue);
   });
 }

@@ -62,9 +62,10 @@ class MethodChannelContinuedTask extends ContinuedTaskPlatform {
   }
 
   @override
-  Future<void> stop({required String taskId}) async {
+  Future<void> stop({required String taskId, bool success = true}) async {
     await methodChannel.invokeMethod<void>('stop', {
       'taskId': taskId,
+      'success': success,
     });
   }
 

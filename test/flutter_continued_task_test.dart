@@ -44,7 +44,7 @@ class MockContinuedTaskPlatform
   }
 
   @override
-  Future<void> stop({required String taskId}) async {
+  Future<void> stop({required String taskId, bool success = true}) async {
     stoppedTasks.add(taskId);
   }
 

@@ -79,7 +79,8 @@ class ContinuedTask {
   /// Updates progress and metadata.
   /// 
   /// High-frequency calls (e.g. 100+ calls/sec) are automatically serialized
-  /// and coalesced to prevent MethodChannel IPC saturation.
+  /// and coalesced to prevent MethodChannel IPC saturation while guaranteeing
+  /// that the final state is always delivered to native platform.
   Future<void> update({
     required int progress,
     int? maxProgress,
@@ -88,19 +89,40 @@ class ContinuedTask {
   }) {
     if (_isStopped) return Future.value();
 
+    final completer = Completer<void>();
+    final oldPending = _pendingUpdate;
+
     _pendingUpdate = _TaskUpdatePayload(
       progress: progress,
       maxProgress: maxProgress ?? config.maxProgress,
       title: title,
       subtitle: subtitle,
+      completer: completer,
     );
 
+    // If there was a previously queued pending update that got coalesced,
+    // ensure its future resolves when this latest payload completes.
+    if (oldPending != null && !oldPending.completer.isCompleted) {
+      completer.future.then(
+        (_) {
+          if (!oldPending.completer.isCompleted) {
+            oldPending.completer.complete();
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!oldPending.completer.isCompleted) {
+            oldPending.completer.completeError(error, stack);
+          }
+        },
+      );
+    }
+
     _activeUpdateJob ??= _processUpdateQueue();
-    return _activeUpdateJob!;
+    return completer.future;
   }
 
   Future<void> _processUpdateQueue() async {
-    while (_pendingUpdate != null && !_isStopped) {
+    while (_pendingUpdate != null) {
       final payload = _pendingUpdate!;
       _pendingUpdate = null;
 
@@ -114,19 +136,32 @@ class ContinuedTask {
         );
       } catch (e) {
         debugPrint('[ContinuedTask] Failed to update progress: $e');
+      } finally {
+        if (!payload.completer.isCompleted) {
+          payload.completer.complete();
+        }
       }
     }
     _activeUpdateJob = null;
   }
 
-  /// Stops the task, releasing native assertions and clearing notifications.
-  Future<void> stop() async {
+  /// Stops the task, ensuring any pending update is delivered, releasing native assertions and clearing notifications.
+  ///
+  /// Pass [success] = false when the task was cancelled or aborted mid-flight.
+  Future<void> stop({bool success = true}) async {
     if (_isStopped) return;
+
+    // Flush any in-flight or pending update so the final state is guaranteed on native
+    if (_activeUpdateJob != null) {
+      await _activeUpdateJob;
+    }
+
     _isStopped = true;
+    _pendingUpdate?.completer.complete();
     _pendingUpdate = null;
 
     try {
-      await ContinuedTaskPlatform.instance.stop(taskId: taskId);
+      await ContinuedTaskPlatform.instance.stop(taskId: taskId, success: success);
     } catch (e) {
       debugPrint('[ContinuedTask] Failed to stop task: $e');
     } finally {
@@ -249,12 +284,15 @@ class ContinuedTask {
   }
 
   /// Stops the currently running task (or cleans up any dangling native service).
-  static Future<void> stopCurrentTask({String taskId = 'upload_task'}) async {
+  static Future<void> stopCurrentTask({
+    String taskId = 'upload_task',
+    bool success = true,
+  }) async {
     if (_currentTask != null) {
-      await _currentTask!.stop();
+      await _currentTask!.stop(success: success);
       _currentTask = null;
     } else {
-      await ContinuedTaskPlatform.instance.stop(taskId: taskId);
+      await ContinuedTaskPlatform.instance.stop(taskId: taskId, success: success);
     }
   }
 
@@ -271,12 +309,14 @@ class _TaskUpdatePayload {
     required this.maxProgress,
     this.title,
     this.subtitle,
+    required this.completer,
   });
 
   final int progress;
   final int maxProgress;
   final String? title;
   final String? subtitle;
+  final Completer<void> completer;
 }
 
 /// Alias for backward compatibility with [ContinuedTask].

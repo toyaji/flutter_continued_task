@@ -84,7 +84,7 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
         _log('🔔 [Notification Action] User tapped Cancel on notification');
         _stopTimer();
         setState(() => _unfinished = 0);
-        await _tracker.sync(0);
+        await _tracker.cancel();
       },
       onTimeout: () {
         _log('⚠️ [OS Event] Task time limit reached (Timeout)');
@@ -168,8 +168,8 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
   Future<void> _cancelAll() async {
     _stopTimer();
     setState(() => _unfinished = 0);
-    _log('🛑 Stop all requested (sync(0))');
-    await _tracker.sync(0);
+    _log('🛑 Stop all requested (cancel())');
+    await _tracker.cancel();
     setState(() {});
   }
 

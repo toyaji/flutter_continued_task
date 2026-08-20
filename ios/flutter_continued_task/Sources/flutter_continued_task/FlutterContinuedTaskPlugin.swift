@@ -38,12 +38,12 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
             return
           }
           guard let self = self else {
-            continued.setTaskCompleted(success: true)
+            continued.setTaskCompleted(success: false)
             return
           }
           if !self.startRequestedInThisSession {
-            NSLog("[FlutterContinuedTask] Unrequested task - completing immediately")
-            continued.setTaskCompleted(success: true)
+            NSLog("[FlutterContinuedTask] Unrequested task from previous session - discarding")
+            continued.setTaskCompleted(success: false)
             return
           }
           self.attach(continued)
@@ -54,6 +54,11 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
 
   @available(iOS 26.0, *)
   private func attach(_ task: BGContinuedProcessingTask) {
+    // If there was an existing active task, finish it first
+    if let existing = activeTask as? BGContinuedProcessingTask, existing !== task {
+      existing.setTaskCompleted(success: false)
+    }
+
     setActive(task)
 
     task.expirationHandler = { [weak self] in
@@ -70,7 +75,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
   private func finishExpired(_ task: BGContinuedProcessingTask) {
     setActive(nil)
     notify("stopRequested")
-    task.setTaskCompleted(success: true)
+    task.setTaskCompleted(success: false)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -83,7 +88,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
       update(args: args)
       result(true)
     case "stop":
-      stop()
+      stop(args: args)
       result(nil)
     case "syncState":
       result([
@@ -105,7 +110,8 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
       self.taskIdentifier = customTaskId
     }
 
-    if activeTask != nil {
+    // If an active task is already running in this exact session, just update its metadata
+    if let task = activeTask as? BGContinuedProcessingTask {
       update(args: args)
       return true
     }
@@ -133,6 +139,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
       return true
     } catch {
       NSLog("[FlutterContinuedTask] Task submission rejected: %@", error.localizedDescription)
+      startRequestedInThisSession = false
       return false
     }
   }
@@ -156,15 +163,16 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     }
   }
 
-  private func stop() {
+  private func stop(args: [String: Any]?) {
     startRequestedInThisSession = false
     guard #available(iOS 26.0, *) else { return }
 
+    let success = args?["success"] as? Bool ?? true
     BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: self.taskIdentifier)
 
     guard let task = activeTask as? BGContinuedProcessingTask else { return }
     setActive(nil)
-    task.setTaskCompleted(success: true)
+    task.setTaskCompleted(success: success)
   }
 
   private func setActive(_ task: NSObject?) {

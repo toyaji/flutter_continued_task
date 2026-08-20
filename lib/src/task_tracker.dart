@@ -87,13 +87,29 @@ class TaskTracker {
   /// Synchronizes the current remaining (unfinished) item count with the tracker.
   ///
   /// - `unfinished > 0`: Calls `start` if no active task, or `update` if already running.
-  /// - `unfinished <= 0`: Sends final 100% completion update and stops the task.
+  /// - `unfinished <= 0`: Represents 100% completion. Sends final 100% completion update and stops the task.
   ///
   /// Rapid consecutive calls are coalesced into a single microtask execution.
   Future<void> sync(int unfinished) {
     if (_isDisposed) return Future.value();
     _requested = unfinished;
     return _flush ??= Future.microtask(_drain);
+  }
+
+  /// Cancels and aborts the ongoing task immediately without firing a fake 100% completion update.
+  Future<void> cancel() async {
+    if (_isDisposed) return;
+    _requested = null;
+    if (_submitted) {
+      _submitted = false;
+      if (_activeTask != null) {
+        await _activeTask!.stop(success: false);
+        _activeTask = null;
+      } else {
+        await ContinuedTask.stopCurrentTask(success: false);
+      }
+    }
+    _resetBatch();
   }
 
   /// Synchronizes and recovers native service state on app startup if needed.
@@ -121,7 +137,7 @@ class TaskTracker {
     _isDisposed = true;
     _requested = null;
     if (_activeTask != null) {
-      await _activeTask!.stop();
+      await _activeTask!.stop(success: false);
       _activeTask = null;
     }
     _submitted = false;
@@ -151,13 +167,15 @@ class TaskTracker {
       if (_submitted) {
         if (_batchTotal > 0) {
           await _updateProgress(done: _batchTotal, total: _batchTotal);
+          // Allow OS UI daemon (Dynamic Island / NotificationCenter) to render 100% state before dismissing
+          await Future<void>.delayed(const Duration(milliseconds: 300));
         }
         _submitted = false;
         if (_activeTask != null) {
-          await _activeTask!.stop();
+          await _activeTask!.stop(success: true);
           _activeTask = null;
         } else {
-          await ContinuedTask.stopCurrentTask();
+          await ContinuedTask.stopCurrentTask(success: true);
         }
       }
       _resetBatch();
