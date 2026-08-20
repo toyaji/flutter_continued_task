@@ -70,6 +70,12 @@ class MethodChannelContinuedTask extends ContinuedTaskPlatform {
   }
 
   @override
+  Future<bool> requestNotificationPermission() async {
+    final result = await methodChannel.invokeMethod<bool>('requestNotificationPermission');
+    return result ?? false;
+  }
+
+  @override
   Future<ContinuedTaskNativeState?> syncState() async {
     final result = await methodChannel.invokeMapMethod<String, dynamic>('syncState');
     if (result == null) return null;

@@ -42,6 +42,11 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
     throw UnimplementedError('stop() has not been implemented.');
   }
 
+  /// Requests notification permission from the user (POST_NOTIFICATIONS on Android 13+, UNUserNotificationCenter on iOS).
+  Future<bool> requestNotificationPermission() {
+    throw UnimplementedError('requestNotificationPermission() has not been implemented.');
+  }
+
   /// Syncs and retrieves native state.
   Future<ContinuedTaskNativeState?> syncState() {
     throw UnimplementedError('syncState() has not been implemented.');

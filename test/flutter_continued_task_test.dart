@@ -49,6 +49,9 @@ class MockContinuedTaskPlatform
   }
 
   @override
+  Future<bool> requestNotificationPermission() async => true;
+
+  @override
   Future<ContinuedTaskNativeState?> syncState() async {
     return nativeState;
   }

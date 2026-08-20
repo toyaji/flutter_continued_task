@@ -59,6 +59,9 @@ class _RecordingPlatform
   }
 
   @override
+  Future<bool> requestNotificationPermission() async => true;
+
+  @override
   Future<ContinuedTaskNativeState?> syncState() async {
     calls.add('syncState');
     return syncStateResult;

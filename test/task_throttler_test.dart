@@ -34,6 +34,9 @@ class SlowMockContinuedTaskPlatform
   Future<void> stop({required String taskId, bool success = true}) async {}
 
   @override
+  Future<bool> requestNotificationPermission() async => true;
+
+  @override
   Future<ContinuedTaskNativeState?> syncState() async {
     return const ContinuedTaskNativeState(assertionHeld: false, stopRequested: false);
   }

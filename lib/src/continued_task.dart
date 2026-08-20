@@ -273,6 +273,13 @@ class ContinuedTask {
     return task;
   }
 
+  /// Requests notification permission from the user (Android 13+ runtime POST_NOTIFICATIONS, iOS alert/badge/sound).
+  ///
+  /// Returns `true` if permission is granted or already authorized.
+  static Future<bool> requestNotificationPermission() {
+    return ContinuedTaskPlatform.instance.requestNotificationPermission();
+  }
+
   /// Syncs and retrieves the current native service state on app startup.
   static Future<ContinuedTaskNativeState?> syncNativeState() {
     return ContinuedTaskPlatform.instance.syncState();

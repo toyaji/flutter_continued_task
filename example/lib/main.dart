@@ -71,6 +71,11 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
   @override
   void initState() {
     super.initState();
+    FlutterContinuedTask.requestNotificationPermission().then((granted) {
+      if (mounted) {
+        _log('🔔 [Permission] Notification permission ${granted ? "Granted" : "Denied"}');
+      }
+    });
     _tracker = ContinuedTask.track(
       title: 'Uploading Photos',
       baseConfig: const ContinuedTaskConfig(
@@ -134,10 +139,10 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
     _startAutoProcess();
   }
 
-  /// Completes 1 item per second
+  /// Completes 1 item every 2 seconds (realistic upload pace)
   void _startAutoProcess() {
     _stopTimer();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    _timer = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
       if (_unfinished <= 0) {
         timer.cancel();
         _log('🎉 All items completed (sync(0) sent -> auto stopped)');
@@ -407,7 +412,7 @@ class _ManualDemoTabState extends State<ManualDemoTab> {
 
   void _startTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    _ticker = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
       final task = _task;
       if (task == null || task.isStopped) {
         timer.cancel();

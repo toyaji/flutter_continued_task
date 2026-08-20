@@ -1,6 +1,7 @@
 import BackgroundTasks
 import Flutter
 import UIKit
+import UserNotifications
 
 /// Holds background process lifecycle on iOS 26 using `BGContinuedProcessingTask`.
 public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
@@ -90,6 +91,12 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     case "stop":
       stop(args: args)
       result(nil)
+    case "requestNotificationPermission":
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+        DispatchQueue.main.async {
+          result(granted)
+        }
+      }
     case "syncState":
       result([
         "assertionHeld": activeTask != nil,
