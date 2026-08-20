@@ -16,7 +16,7 @@ class MethodChannelContinuedTask extends ContinuedTaskPlatform {
 
   @visibleForTesting
   final MethodChannel methodChannel =
-      const MethodChannel('dev.flutter.continued_task/channel');
+      const MethodChannel('io.github.toyaji.continued_task/channel');
 
   void Function(String event)? _onEvent;
 

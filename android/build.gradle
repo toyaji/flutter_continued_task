@@ -1,4 +1,4 @@
-group 'dev.flutter.continued_task'
+group 'io.github.toyaji.continued_task'
 version '1.0-SNAPSHOT'
 
 buildscript {
@@ -25,7 +25,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace 'dev.flutter.continued_task'
+    namespace 'io.github.toyaji.continued_task'
     compileSdk 35
 
     compileOptions {

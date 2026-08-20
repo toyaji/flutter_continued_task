@@ -6,11 +6,12 @@ import UserNotifications
 /// Holds background process lifecycle on iOS 26 using `BGContinuedProcessingTask`.
 public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
 
-  public static let channelName = "dev.flutter.continued_task/channel"
+  public static let channelName = "io.github.toyaji.continued_task/channel"
 
   private var channel: FlutterMethodChannel?
   private var activeTask: NSObject?
-  private var taskIdentifier: String = "co.zelly.flutter.upload"
+  private lazy var taskIdentifier: String =
+    "\(Bundle.main.bundleIdentifier ?? "com.example.app").continued_task"
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: channelName, binaryMessenger: registrar.messenger())

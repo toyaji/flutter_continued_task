@@ -32,7 +32,7 @@
 ## 3. Platform Interface Contract
 
 ### 3.1 MethodChannel Specification
-- **Channel Name**: `dev.flutter.continued_task/channel`
+- **Channel Name**: `io.github.toyaji.continued_task/channel`
 
 #### Dart → Native (Methods)
 | Method | Arguments | Return | Description |

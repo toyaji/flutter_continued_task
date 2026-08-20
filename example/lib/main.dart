@@ -83,7 +83,7 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
         androidNotificationIcon: 'upload',
         androidChannelName: 'Photo Upload',
         androidChannelDescription: 'Shows progress while uploading photos',
-        iosTaskIdentifier: 'dev.flutter.flutterContinuedTaskExample.task',
+        iosTaskIdentifier: 'io.github.toyaji.continuedTaskExample.task',
       ),
       onUserCancel: () async {
         _log('🔔 [Notification Action] User tapped Cancel on notification');
@@ -381,7 +381,7 @@ class _ManualDemoTabState extends State<ManualDemoTab> {
         maxProgress: _totalUnits,
         allowCancel: true,
         cancelActionLabel: 'Cancel',
-        iosTaskIdentifier: 'dev.flutter.flutterContinuedTaskExample.task',
+        iosTaskIdentifier: 'io.github.toyaji.continuedTaskExample.task',
       ),
       onUserCancel: () {
         _log('User cancel received');

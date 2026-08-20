@@ -229,7 +229,7 @@ class TaskTracker {
 
   ContinuedTaskConfig _buildConfig(int done, int total) {
     if (_configBuilder != null) {
-      return _configBuilder!(done, total);
+      return _configBuilder(done, total);
     }
 
     final resolvedTitle = titleBuilder != null

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/main.dart';
+import 'package:flutter_continued_task_example/main.dart';
 
 void main() {
   testWidgets('renders example app dashboard correctly', (tester) async {

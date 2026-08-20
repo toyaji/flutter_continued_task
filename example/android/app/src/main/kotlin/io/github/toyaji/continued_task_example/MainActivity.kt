@@ -1,4 +1,4 @@
-package dev.flutter.flutter_continued_task_example
+package io.github.toyaji.continued_task_example
 
 import io.flutter.embedding.android.FlutterActivity
 

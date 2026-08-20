@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.flutter.flutter_continued_task_example"
+    namespace = "io.github.toyaji.continued_task_example"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.flutter.flutter_continued_task_example"
+        applicationId = "io.github.toyaji.continued_task_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // 플러그인의 동작 하한과 같다 — 포그라운드 서비스 기반이라 API 26 미만은 지원하지 않는다.

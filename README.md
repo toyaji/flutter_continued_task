@@ -92,7 +92,7 @@ Add `UIBackgroundModes` with `processing` and your task identifier to `ios/Runne
 </array>
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>
-    <string>dev.flutter.continued_task</string>
+    <string>com.example.app.continued_task</string>
 </array>
 ```
 

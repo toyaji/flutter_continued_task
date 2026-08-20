@@ -1,4 +1,4 @@
-package dev.flutter.continued_task
+package io.github.toyaji.continued_task
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -19,10 +19,10 @@ import androidx.core.app.NotificationCompat
 class ContinuedTaskForegroundService : Service() {
 
     companion object {
-        const val ACTION_START = "dev.flutter.continued_task.START"
-        const val ACTION_UPDATE = "dev.flutter.continued_task.UPDATE"
-        const val ACTION_STOP = "dev.flutter.continued_task.STOP"
-        const val ACTION_USER_CANCEL = "dev.flutter.continued_task.USER_CANCEL"
+        const val ACTION_START = "io.github.toyaji.continued_task.START"
+        const val ACTION_UPDATE = "io.github.toyaji.continued_task.UPDATE"
+        const val ACTION_STOP = "io.github.toyaji.continued_task.STOP"
+        const val ACTION_USER_CANCEL = "io.github.toyaji.continued_task.USER_CANCEL"
 
         const val EXTRA_TASK_ID = "taskId"
         const val EXTRA_TITLE = "title"

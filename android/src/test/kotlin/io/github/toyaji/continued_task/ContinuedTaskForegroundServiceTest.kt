@@ -1,4 +1,4 @@
-package dev.flutter.continued_task
+package io.github.toyaji.continued_task
 
 import android.content.Context
 import android.content.Intent
@@ -88,7 +88,7 @@ class ContinuedTaskForegroundServiceTest {
     fun `unknown action stops the service`() {
         val service = buildService()
 
-        service.onStartCommand(intent("dev.flutter.continued_task.UNKNOWN"), 0, 1)
+        service.onStartCommand(intent("io.github.toyaji.continued_task.UNKNOWN"), 0, 1)
 
         assertFalse(ContinuedTaskForegroundService.isAssertionHeld)
         assertTrue(events.contains("assertionLost"))

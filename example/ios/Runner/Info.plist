@@ -7,7 +7,7 @@
 	     문자열**이어야 한다(와일드카드는 매칭 실패 사례가 보고돼 있다). -->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>dev.flutter.flutterContinuedTaskExample.task</string>
+		<string>io.github.toyaji.continuedTaskExample.task</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

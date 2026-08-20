@@ -23,7 +23,7 @@ This document defines testing scenarios to verify that the `flutter_continued_ta
 ### 2.1 Android Simulation Commands
 ```bash
 # 1. Inspect Foreground Service state
-adb shell dumpsys activity services | grep -A 10 "dev.flutter.continued_task"
+adb shell dumpsys activity services | grep -A 10 "io.github.toyaji.continued_task"
 
 # 2. Force Doze Mode
 adb shell dumpsys deviceidle force-idle
@@ -40,6 +40,6 @@ adb logcat -c && adb logcat | grep -iE "ContinuedTask|FlutterContinuedTask"
 2. Move app to background and lock screen.
 3. In Xcode LLDB, simulate task expiration:
 ```lldb
-e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateExpirationForTaskWithIdentifier:@"co.zelly.flutter.upload"]
+e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateExpirationForTaskWithIdentifier:@"com.example.app.continued_task"]
 ```
 4. Verify console logs.

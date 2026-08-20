@@ -1,4 +1,4 @@
-package dev.flutter.continued_task
+package io.github.toyaji.continued_task
 
 import android.Manifest
 import android.app.Activity
@@ -37,7 +37,7 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "dev.flutter.continued_task/channel")
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "io.github.toyaji.continued_task/channel")
         channel.setMethodCallHandler(this)
 
         val listener: (String) -> Unit = { event ->
