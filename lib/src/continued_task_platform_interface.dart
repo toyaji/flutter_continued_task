@@ -4,15 +4,22 @@ import 'method_channel_continued_task.dart';
 import 'models/continued_task_config.dart';
 import 'models/continued_task_state.dart';
 
+/// The platform interface every `flutter_continued_task` implementation extends.
+///
+/// Platform implementations must extend this class rather than implement it, so
+/// that newly added methods do not break existing subclasses.
 abstract class ContinuedTaskPlatform extends PlatformInterface {
+  /// Constructs a platform implementation with the shared verification token.
   ContinuedTaskPlatform() : super(token: _token);
 
   static final Object _token = Object();
 
   static ContinuedTaskPlatform _instance = MethodChannelContinuedTask();
 
+  /// The implementation currently in use, defaulting to the method channel one.
   static ContinuedTaskPlatform get instance => _instance;
 
+  /// Replaces the active implementation, e.g. with a fake in tests.
   static set instance(ContinuedTaskPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
@@ -44,7 +51,8 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
 
   /// Requests notification permission from the user (POST_NOTIFICATIONS on Android 13+, UNUserNotificationCenter on iOS).
   Future<bool> requestNotificationPermission() {
-    throw UnimplementedError('requestNotificationPermission() has not been implemented.');
+    throw UnimplementedError(
+        'requestNotificationPermission() has not been implemented.');
   }
 
   /// Syncs and retrieves native state.

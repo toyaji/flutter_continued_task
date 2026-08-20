@@ -128,7 +128,9 @@ void main() {
       check(tracker.batchTotal).equals(0);
     });
 
-    test('cancel() immediately stops ongoing task without sending fake 100% update', () async {
+    test(
+        'cancel() immediately stops ongoing task without sending fake 100% update',
+        () async {
       await tracker.sync(9);
       for (var remaining = 8; remaining >= 5; remaining--) {
         await tracker.sync(remaining);
@@ -146,7 +148,9 @@ void main() {
       check(tracker.batchTotal).equals(0);
     });
 
-    test('Rapid consecutive calls coalesce into a single start with final count', () async {
+    test(
+        'Rapid consecutive calls coalesce into a single start with final count',
+        () async {
       unawaited(tracker.sync(1));
       unawaited(tracker.sync(2));
       await tracker.sync(9);
@@ -157,7 +161,8 @@ void main() {
       check(tracker.batchTotal).equals(9);
     });
 
-    test('Mid-flight progress changes emit update only without redundant start', () async {
+    test('Mid-flight progress changes emit update only without redundant start',
+        () async {
       await tracker.sync(3);
       await tracker.sync(2);
       await tracker.sync(1);
@@ -167,7 +172,8 @@ void main() {
       check(mock.updateArgs.last['progress']).equals(2); // (3 - 1) = 2
     });
 
-    test('Batch total is calculated from when count increases from 0', () async {
+    test('Batch total is calculated from when count increases from 0',
+        () async {
       await tracker.sync(2);
       check(mock.startedConfig!.maxProgress).equals(2);
       check(mock.startedConfig!.initialProgress).equals(0);
@@ -188,7 +194,8 @@ void main() {
       check(mock.updateArgs.last['maxProgress']).equals(5);
     });
 
-    test('Start rejection clears submitted state and retries on next sync', () async {
+    test('Start rejection clears submitted state and retries on next sync',
+        () async {
       final rejectingMock = _RecordingPlatform(startResult: false);
       ContinuedTaskPlatform.instance = rejectingMock;
       final rejectingTracker = ContinuedTask.track(
@@ -230,7 +237,9 @@ void main() {
       check(held).equals(false);
     });
 
-    test('Submitted state does not imply assertion acquired - only native events confirm', () async {
+    test(
+        'Submitted state does not imply assertion acquired - only native events confirm',
+        () async {
       final held = <bool>[];
       final holdingTracker = ContinuedTask.track(
         title: 'Testing',
@@ -284,7 +293,8 @@ void main() {
       check(cancelCalled).isTrue();
     });
 
-    test('Auto-formats title with progress and supports custom titleBuilder', () async {
+    test('Auto-formats title with progress and supports custom titleBuilder',
+        () async {
       final customTracker = ContinuedTask.track(
         titleBuilder: (done, total) => 'Custom: $done of $total',
         autoSyncNativeState: false,
@@ -310,7 +320,8 @@ void main() {
   group('syncNativeState recovery', () {
     setUp(ContinuedTask.resetForTesting);
 
-    test('Recovers running service state and stops cleanly when count is 0', () async {
+    test('Recovers running service state and stops cleanly when count is 0',
+        () async {
       final mock = _RecordingPlatform(
         syncStateResult: const ContinuedTaskNativeState(
           assertionHeld: true,
@@ -333,7 +344,8 @@ void main() {
       check(tracker.isSubmitted).isFalse();
     });
 
-    test('Pending stop request is acknowledged only after callback finishes', () async {
+    test('Pending stop request is acknowledged only after callback finishes',
+        () async {
       final mock = _RecordingPlatform(
         syncStateResult: const ContinuedTaskNativeState(
           assertionHeld: false,
@@ -360,7 +372,9 @@ void main() {
   group('Assertion lost & submission state', () {
     setUp(ContinuedTask.resetForTesting);
 
-    test('assertionLost clears submitted state so next sync triggers start again', () async {
+    test(
+        'assertionLost clears submitted state so next sync triggers start again',
+        () async {
       final mock = _RecordingPlatform(startResult: true);
       ContinuedTaskPlatform.instance = mock;
       final tracker = ContinuedTask.track(
@@ -380,4 +394,3 @@ void main() {
     });
   });
 }
-

@@ -1,17 +1,29 @@
 # flutter_continued_task_example
 
-Demonstrates how to use the flutter_continued_task plugin.
+An interactive dashboard for exercising `flutter_continued_task` on a real device
+or emulator.
 
-## Getting Started
+```bash
+cd example
+flutter run
+```
 
-This project is a starting point for a Flutter application.
+## What it demonstrates
 
-A few resources to get you started if this is your first Flutter project:
+- **Simulated upload queue** — start a batch, then add items mid-flight to see
+  `TaskTracker.sync()` coalesce rapid changes into a single native update.
+- **Progress notification** — live title/progress on the Android notification and
+  the iOS 26 Lock Screen.
+- **User cancel** — the notification's cancel action routed back into Dart via
+  `onUserCancel`.
+- **Lifecycle survival** — background the app, lock the screen, or swipe the app
+  away and watch how the native assertion is held or released.
+- **Unsupported platforms** — `ContinuedTask.isSupported` reporting `false` with
+  the work still running normally in the foreground.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Requirements
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Android: `minSdk 26` (already set in `android/app/build.gradle.kts`)
+- iOS: Xcode 26 / iOS 26 SDK to build; background continuation is active on
+  iOS 26+ devices only. The task identifier is declared in
+  `ios/Runner/Info.plist` and must stay prefixed with the app's bundle ID.

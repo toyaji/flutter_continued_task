@@ -6,7 +6,9 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('syncState receives valid native response without throwing', (tester) async {
+  testWidgets('syncState receives valid native response without throwing', (
+    tester,
+  ) async {
     final state = await FlutterContinuedTask.syncNativeState();
 
     // Returns state on supported platforms or null on unsupported; never throws.
@@ -16,11 +18,15 @@ void main() {
     }
   });
 
-  testWidgets('ackStopRequest is safe even when no task is active', (tester) async {
+  testWidgets('ackStopRequest is safe even when no task is active', (
+    tester,
+  ) async {
     await expectLater(FlutterContinuedTask.ackStopRequest(), completes);
   });
 
-  testWidgets('stopCurrentTask is safe and no-op when no task is running', (tester) async {
+  testWidgets('stopCurrentTask is safe and no-op when no task is running', (
+    tester,
+  ) async {
     await expectLater(FlutterContinuedTask.stopCurrentTask(), completes);
     expect(FlutterContinuedTask.currentTask, isNull);
   });

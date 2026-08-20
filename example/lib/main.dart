@@ -12,10 +12,7 @@ class ExampleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'flutter_continued_task Example',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
       home: const MainTabScreen(),
     );
   }
@@ -38,12 +35,7 @@ class MainTabScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [
-            TrackerDemoTab(),
-            ManualDemoTab(),
-          ],
-        ),
+        body: const TabBarView(children: [TrackerDemoTab(), ManualDemoTab()]),
       ),
     );
   }
@@ -73,7 +65,9 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
     super.initState();
     FlutterContinuedTask.requestNotificationPermission().then((granted) {
       if (mounted) {
-        _log('🔔 [Permission] Notification permission ${granted ? "Granted" : "Denied"}');
+        _log(
+          '🔔 [Permission] Notification permission ${granted ? "Granted" : "Denied"}',
+        );
       }
     });
     _tracker = ContinuedTask.track(
@@ -96,7 +90,9 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
         _stopTimer();
       },
       onAssertionChanged: (held) {
-        _log('⚡ [OS Lifecycle] Foreground assertion ${held ? "Acquired (Active)" : "Lost (Inactive)"}');
+        _log(
+          '⚡ [OS Lifecycle] Foreground assertion ${held ? "Acquired (Active)" : "Lost (Inactive)"}',
+        );
         if (mounted) setState(() => _assertionHeld = held);
       },
       autoSyncNativeState: true,
@@ -135,7 +131,9 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
     }
     setState(() {});
 
-    _log('✅ 9 photos enqueued (batchTotal: ${_tracker.batchTotal}, submitted: ${_tracker.isSubmitted})');
+    _log(
+      '✅ 9 photos enqueued (batchTotal: ${_tracker.batchTotal}, submitted: ${_tracker.isSubmitted})',
+    );
     _startAutoProcess();
   }
 
@@ -152,7 +150,9 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
       }
 
       setState(() => _unfinished--);
-      _log('In progress: $_unfinished items remaining (${_tracker.batchTotal - _unfinished} of ${_tracker.batchTotal} completed)');
+      _log(
+        'In progress: $_unfinished items remaining (${_tracker.batchTotal - _unfinished} of ${_tracker.batchTotal} completed)',
+      );
       await _tracker.sync(_unfinished);
       if (mounted) setState(() {});
     });
@@ -203,28 +203,42 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
                     children: [
                       Text(
                         'Progress: $done / $total',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: _assertionHeld ? Colors.green.shade100 : Colors.grey.shade200,
+                          color: _assertionHeld
+                              ? Colors.green.shade100
+                              : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
                             Icon(
-                              _assertionHeld ? Icons.shield : Icons.shield_outlined,
+                              _assertionHeld
+                                  ? Icons.shield
+                                  : Icons.shield_outlined,
                               size: 16,
-                              color: _assertionHeld ? Colors.green.shade800 : Colors.grey.shade600,
+                              color: _assertionHeld
+                                  ? Colors.green.shade800
+                                  : Colors.grey.shade600,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _assertionHeld ? 'Foreground Active' : 'Foreground Inactive',
+                              _assertionHeld
+                                  ? 'Foreground Active'
+                                  : 'Foreground Inactive',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: _assertionHeld ? Colors.green.shade800 : Colors.grey.shade600,
+                                color: _assertionHeld
+                                    ? Colors.green.shade800
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ],
@@ -242,8 +256,20 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Remaining: $_unfinished', style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                      Text('isSubmitted: ${_tracker.isSubmitted}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text(
+                        'Remaining: $_unfinished',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      Text(
+                        'isSubmitted: ${_tracker.isSubmitted}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -253,7 +279,10 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
           const SizedBox(height: 16),
 
           // 2. Simulation Action Buttons
-          Text('Simulation Actions', style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            'Simulation Actions',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: isRunning ? null : _simulateBatchEnqueue,
@@ -286,7 +315,10 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Realtime Event Logs', style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                'Realtime Event Logs',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               TextButton(
                 onPressed: () => setState(_logs.clear),
                 child: const Text('Clear Logs'),
@@ -303,12 +335,20 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
             ),
             padding: const EdgeInsets.all(8),
             child: _logs.isEmpty
-                ? const Center(child: Text('No logs yet. Tap an action above to start.'))
+                ? const Center(
+                    child: Text('No logs yet. Tap an action above to start.'),
+                  )
                 : ListView.builder(
                     itemCount: _logs.length,
                     itemBuilder: (context, index) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(_logs[index], style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                      child: Text(
+                        _logs[index],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
                     ),
                   ),
           ),
@@ -356,7 +396,9 @@ class _ManualDemoTabState extends State<ManualDemoTab> {
     if (!mounted || state == null) return;
     setState(() {
       _assertionHeld = state.assertionHeld;
-      _log('syncState: assertionHeld=${state.assertionHeld} stopRequested=${state.stopRequested}');
+      _log(
+        'syncState: assertionHeld=${state.assertionHeld} stopRequested=${state.stopRequested}',
+      );
     });
     if (state.stopRequested) {
       await ContinuedTask.ackStopRequest();
@@ -449,7 +491,10 @@ class _ManualDemoTabState extends State<ManualDemoTab> {
           const SizedBox(height: 8),
           Text('$_done / $_totalUnits', textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text('Foreground Assertion: ${_assertionHeld ? "Active" : "Inactive"}', textAlign: TextAlign.center),
+          Text(
+            'Foreground Assertion: ${_assertionHeld ? "Active" : "Inactive"}',
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -488,4 +533,3 @@ class _ManualDemoTabState extends State<ManualDemoTab> {
     );
   }
 }
-

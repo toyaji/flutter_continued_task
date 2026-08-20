@@ -43,10 +43,11 @@ When a mobile app moves to the background during long-running tasks (such as pho
 
 | Platform | Install Target | **Active Background Continuation** | Underlying Mechanism |
 | :--- | :--- | :--- | :--- |
-| **Android** | Android 5.0+ (API 21+) | **Android 8.0+ (API 26+)** | `ForegroundService` (`dataSync`) with 6h guard |
+| **Android** | Android 8.0+ (API 26+) | **Android 8.0+ (API 26+)** | `ForegroundService` (`dataSync`) with 6h guard |
 | **iOS** | iOS 13.0+ | **iOS 26.0+** | `BGContinuedProcessingTask` & Lock Screen Progress |
 
-> **Note on Compatibility**: Below runtime minimums (e.g. iOS < 26.0), `ContinuedTask.start()` gracefully returns `false` / no-op without throwing errors, letting tasks run normally in the foreground and pause naturally in the background.
+> **Note on Compatibility**: Below runtime minimums (e.g. iOS < 26.0), `ContinuedTask.start()` gracefully returns `false` / no-op without throwing errors, letting tasks run normally in the foreground and pause naturally in the background. This fallback is **runtime-only**: building the iOS side requires **Xcode 26 / the iOS 26 SDK**, and your Android module must set `minSdkVersion 26` or higher.
+
 
 ---
 
@@ -69,7 +70,13 @@ dependencies:
 All required permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `POST_NOTIFICATIONS`) and the foreground service component are **automatically merged** into your final APK/AAB during the build.
 
 > **Tip for Android 13+ (API 33+)**:  
-> To display progress notifications to the user, ensure your app requests runtime notification permission (e.g. using `permission_handler` or your preferred permission library).
+> Progress notifications require runtime notification permission. The package ships a helper, so no extra dependency is needed:
+>
+> ```dart
+> final granted = await ContinuedTask.requestNotificationPermission();
+> ```
+>
+> It returns `true` immediately on iOS and on Android below API 33.
 
 ---
 
@@ -92,7 +99,8 @@ Add `UIBackgroundModes` with `processing` and your task identifier to `ios/Runne
 </array>
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>
-    <string>com.example.app.continued_task</string>
+    <!-- Must be prefixed with your app's bundle identifier. -->
+    <string>com.your.bundle.id.continued_task</string>
 </array>
 ```
 
@@ -224,11 +232,10 @@ All properties have sensible defaults and are completely optional:
 This package includes a standalone unit & integration test suite covering all lifecycle and concurrency scenarios:
 
 ```bash
-cd packages/flutter_continued_task
 flutter test
 ```
 
-You can also run the interactive test dashboard in `packages/flutter_continued_task/example` to visually test rapid batch coalescing, mid-flight additions, and notification cancel actions on an emulator or real device.
+You can also run the interactive test dashboard in `example/` (`cd example && flutter run`) to visually test rapid batch coalescing, mid-flight additions, and notification cancel actions on an emulator or real device.
 
 ---
 

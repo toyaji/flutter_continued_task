@@ -95,7 +95,8 @@ void main() {
       expect(FlutterContinuedTask.currentTask, equals(task));
     });
 
-    test('start returns null when native start fails (e.g. background blocked)', () async {
+    test('start returns null when native start fails (e.g. background blocked)',
+        () async {
       mockPlatform.startResult = false;
 
       const config = ContinuedTaskConfig(
@@ -121,8 +122,10 @@ void main() {
       expect(mockPlatform.updateCalls.first['subtitle'], '45 / 100');
     });
 
-    test('stop delegates to platform interface and marks task stopped', () async {
-      const config = ContinuedTaskConfig(title: 'Video Encoding', taskId: 'video_1');
+    test('stop delegates to platform interface and marks task stopped',
+        () async {
+      const config =
+          ContinuedTaskConfig(title: 'Video Encoding', taskId: 'video_1');
       final task = await FlutterContinuedTask.start(config: config);
       expect(task, isNotNull);
 

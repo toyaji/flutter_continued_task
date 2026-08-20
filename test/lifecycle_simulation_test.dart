@@ -20,7 +20,8 @@ class LifecycleMockPlatform
     int? maxProgress,
     String? title,
     String? subtitle,
-  }) async => true;
+  }) async =>
+      true;
 
   @override
   Future<void> stop({required String taskId, bool success = true}) async {}
@@ -30,7 +31,8 @@ class LifecycleMockPlatform
 
   @override
   Future<ContinuedTaskNativeState?> syncState() async =>
-      const ContinuedTaskNativeState(assertionHeld: false, stopRequested: false);
+      const ContinuedTaskNativeState(
+          assertionHeld: false, stopRequested: false);
 
   @override
   Future<void> ackStopRequest() async {}
@@ -56,7 +58,9 @@ void main() {
   });
 
   group('Lifecycle Simulation Tests', () {
-    test('assertionAcquired and assertionLost events update isAssertionHeld and fire callback', () async {
+    test(
+        'assertionAcquired and assertionLost events update isAssertionHeld and fire callback',
+        () async {
       final heldHistory = <bool>[];
 
       final task = await FlutterContinuedTask.start(
@@ -77,7 +81,9 @@ void main() {
       expect(heldHistory, equals([true, false]));
     });
 
-    test('stopRequested event (user tapped cancel button on notification) triggers onUserCancel', () async {
+    test(
+        'stopRequested event (user tapped cancel button on notification) triggers onUserCancel',
+        () async {
       bool userCancelFired = false;
 
       final task = await FlutterContinuedTask.start(
@@ -93,7 +99,9 @@ void main() {
       expect(userCancelFired, isTrue);
     });
 
-    test('timeout event (Android 6h limit or iOS expiration) triggers onTimeout and resets assertion', () async {
+    test(
+        'timeout event (Android 6h limit or iOS expiration) triggers onTimeout and resets assertion',
+        () async {
       bool timeoutFired = false;
       final heldHistory = <bool>[];
 

@@ -7,6 +7,7 @@ import 'continued_task_platform_interface.dart';
 import 'models/continued_task_config.dart';
 import 'models/continued_task_state.dart';
 
+/// The default [ContinuedTaskPlatform] implementation, backed by a [MethodChannel].
 class MethodChannelContinuedTask extends ContinuedTaskPlatform {
   @override
   bool get isSupported =>
@@ -14,12 +15,14 @@ class MethodChannelContinuedTask extends ContinuedTaskPlatform {
       !const bool.fromEnvironment('NO_BG_ASSERTION') &&
       (Platform.isAndroid || Platform.isIOS);
 
+  /// The channel used to talk to the Android and iOS implementations.
   @visibleForTesting
   final MethodChannel methodChannel =
       const MethodChannel('io.github.toyaji.continued_task/channel');
 
   void Function(String event)? _onEvent;
 
+  /// Creates the implementation and starts listening for native callbacks.
   MethodChannelContinuedTask() {
     methodChannel.setMethodCallHandler(_handleMethodCall);
   }
@@ -71,13 +74,15 @@ class MethodChannelContinuedTask extends ContinuedTaskPlatform {
 
   @override
   Future<bool> requestNotificationPermission() async {
-    final result = await methodChannel.invokeMethod<bool>('requestNotificationPermission');
+    final result =
+        await methodChannel.invokeMethod<bool>('requestNotificationPermission');
     return result ?? false;
   }
 
   @override
   Future<ContinuedTaskNativeState?> syncState() async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('syncState');
+    final result =
+        await methodChannel.invokeMapMethod<String, dynamic>('syncState');
     if (result == null) return null;
     return ContinuedTaskNativeState.fromMap(result);
   }

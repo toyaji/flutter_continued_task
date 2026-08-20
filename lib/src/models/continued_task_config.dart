@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Configuration model for starting a continued background task.
 @immutable
 class ContinuedTaskConfig {
+  /// Creates a configuration for a continued background task.
   const ContinuedTaskConfig({
     this.title = 'Task in progress',
     this.taskId = 'default_task',
@@ -15,7 +16,8 @@ class ContinuedTaskConfig {
     this.androidNotificationIcon,
     this.androidChannelId = 'continued_task_channel',
     this.androidChannelName = 'Background Task',
-    this.androidChannelDescription = 'Shows ongoing progress for continued tasks',
+    this.androidChannelDescription =
+        'Shows ongoing progress for continued tasks',
     this.iosTaskIdentifier,
   });
 
@@ -84,14 +86,17 @@ class ContinuedTaskConfig {
       indeterminate: indeterminate ?? this.indeterminate,
       allowCancel: allowCancel ?? this.allowCancel,
       cancelActionLabel: cancelActionLabel ?? this.cancelActionLabel,
-      androidNotificationIcon: androidNotificationIcon ?? this.androidNotificationIcon,
+      androidNotificationIcon:
+          androidNotificationIcon ?? this.androidNotificationIcon,
       androidChannelId: androidChannelId ?? this.androidChannelId,
       androidChannelName: androidChannelName ?? this.androidChannelName,
-      androidChannelDescription: androidChannelDescription ?? this.androidChannelDescription,
+      androidChannelDescription:
+          androidChannelDescription ?? this.androidChannelDescription,
       iosTaskIdentifier: iosTaskIdentifier ?? this.iosTaskIdentifier,
     );
   }
 
+  /// Serializes this config into the payload sent over the method channel.
   Map<String, dynamic> toMap() {
     return {
       'taskId': taskId,

@@ -29,6 +29,7 @@ class ContinuedTask {
   /// Callback triggered when the OS process assertion is acquired (`held = true`) or lost (`held = false`).
   void Function(bool held)? onAssertionChanged;
 
+  /// Identifier of the task this handle controls.
   String get taskId => config.taskId;
 
   bool _isAssertionHeld = false;
@@ -77,7 +78,7 @@ class ContinuedTask {
   }
 
   /// Updates progress and metadata.
-  /// 
+  ///
   /// High-frequency calls (e.g. 100+ calls/sec) are automatically serialized
   /// and coalesced to prevent MethodChannel IPC saturation while guaranteeing
   /// that the final state is always delivered to native platform.
@@ -161,7 +162,8 @@ class ContinuedTask {
     _pendingUpdate = null;
 
     try {
-      await ContinuedTaskPlatform.instance.stop(taskId: taskId, success: success);
+      await ContinuedTaskPlatform.instance
+          .stop(taskId: taskId, success: success);
     } catch (e) {
       debugPrint('[ContinuedTask] Failed to stop task: $e');
     } finally {
@@ -177,9 +179,12 @@ class ContinuedTask {
   }) {
     if (onUserCancel != null) this.onUserCancel = onUserCancel;
     if (onTimeout != null) this.onTimeout = onTimeout;
-    if (onAssertionChanged != null) this.onAssertionChanged = onAssertionChanged;
+    if (onAssertionChanged != null) {
+      this.onAssertionChanged = onAssertionChanged;
+    }
   }
 
+  /// Feeds a native event name into this task without a platform round trip.
   @visibleForTesting
   void simulateEvent(String event) {
     switch (event) {
@@ -244,7 +249,7 @@ class ContinuedTask {
   }
 
   /// Starts a continued task manually and requests native process lifecycle continuation.
-  /// 
+  ///
   /// - Returns a `ContinuedTask` on success.
   /// - Returns `null` if rejected (e.g. background execution restrictions).
   static Future<ContinuedTask?> start({
@@ -292,14 +297,15 @@ class ContinuedTask {
 
   /// Stops the currently running task (or cleans up any dangling native service).
   static Future<void> stopCurrentTask({
-    String taskId = 'upload_task',
+    String taskId = 'default_task',
     bool success = true,
   }) async {
     if (_currentTask != null) {
       await _currentTask!.stop(success: success);
       _currentTask = null;
     } else {
-      await ContinuedTaskPlatform.instance.stop(taskId: taskId, success: success);
+      await ContinuedTaskPlatform.instance
+          .stop(taskId: taskId, success: success);
     }
   }
 

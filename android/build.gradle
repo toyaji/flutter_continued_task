@@ -41,8 +41,8 @@ android {
         minSdkVersion 26
     }
 
-    // 네이티브 로직을 JVM에서 검증한다. 기기·에뮬레이터가 필요 없어 CI에서 돈다.
-    // Robolectric이 Android 프레임워크(Service·Notification)를 대신 제공한다.
+    // Verifies native logic on the JVM so CI needs no device or emulator.
+    // Robolectric stands in for the Android framework (Service, Notification).
     testOptions {
         unitTests {
             includeAndroidResources = true

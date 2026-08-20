@@ -119,7 +119,7 @@ public class FlutterContinuedTaskPlugin: NSObject, FlutterPlugin {
     }
 
     // If an active task is already running in this exact session, just update its metadata
-    if let task = activeTask as? BGContinuedProcessingTask {
+    if activeTask is BGContinuedProcessingTask {
       update(args: args)
       return true
     }

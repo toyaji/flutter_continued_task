@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- BGContinuedProcessingTask는 이 두 키가 있어야 동작한다.
-	     식별자는 번들 ID 접두가 필수이며, register/submit과 **정확히 같은
-	     문자열**이어야 한다(와일드카드는 매칭 실패 사례가 보고돼 있다). -->
+	<!-- BGContinuedProcessingTask requires both of these keys. The identifier
+	     must be prefixed with the bundle ID and must match the string passed to
+	     register/submit exactly; wildcards are not resolved. -->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>io.github.toyaji.continuedTaskExample.task</string>

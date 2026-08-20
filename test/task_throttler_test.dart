@@ -38,7 +38,8 @@ class SlowMockContinuedTaskPlatform
 
   @override
   Future<ContinuedTaskNativeState?> syncState() async {
-    return const ContinuedTaskNativeState(assertionHeld: false, stopRequested: false);
+    return const ContinuedTaskNativeState(
+        assertionHeld: false, stopRequested: false);
   }
 
   @override
@@ -58,7 +59,9 @@ void main() {
     ContinuedTaskPlatform.instance = mockPlatform;
   });
 
-  test('High-frequency updates are serialized and coalesced, ensuring final state', () async {
+  test(
+      'High-frequency updates are serialized and coalesced, ensuring final state',
+      () async {
     final task = await FlutterContinuedTask.start(
       config: const ContinuedTaskConfig(title: 'High Frequency Processing'),
     );
@@ -82,7 +85,9 @@ void main() {
     expect(mockPlatform.processedProgresses.length, lessThan(50));
   });
 
-  test('Immediate stop after rapid update guarantees final progress is flushed to native', () async {
+  test(
+      'Immediate stop after rapid update guarantees final progress is flushed to native',
+      () async {
     final task = await FlutterContinuedTask.start(
       config: const ContinuedTaskConfig(title: 'Flush Test'),
     );

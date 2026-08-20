@@ -37,11 +37,12 @@
 #### Dart → Native (Methods)
 | Method | Arguments | Return | Description |
 | :--- | :--- | :--- | :--- |
-| `start` | `taskId: String`<br>`title: String`<br>`subtitle: String?`<br>`initialProgress: Int`<br>`maxProgress: Int`<br>`indeterminate: Boolean`<br>`allowCancel: Boolean`<br>`cancelActionLabel: String?`<br>`notificationIcon: String?`<br>`channelId: String?`<br>`channelName: String?`<br>`iosTaskIdentifier: String?` | `Boolean` | Requests task start and process assertion. Returns `true` on success, `false` if rejected. |
+| `start` | `taskId: String`<br>`title: String`<br>`subtitle: String?`<br>`initialProgress: Int`<br>`maxProgress: Int`<br>`indeterminate: Boolean`<br>`allowCancel: Boolean`<br>`cancelActionLabel: String?`<br>`androidNotificationIcon: String?`<br>`androidChannelId: String?`<br>`androidChannelName: String?`<br>`androidChannelDescription: String?`<br>`iosTaskIdentifier: String?` | `Boolean` | Requests task start and process assertion. Returns `true` on success, `false` if rejected. |
 | `update` | `taskId: String`<br>`progress: Int`<br>`maxProgress: Int?`<br>`title: String?`<br>`subtitle: String?` | `Boolean` | Updates progress and metadata. |
-| `stop` | `taskId: String` | `void` | Stops task and releases native assertion. |
+| `stop` | `taskId: String`<br>`success: Boolean` | `void` | Stops task and releases native assertion. `success` marks whether the work completed normally. |
 | `syncState` | None | `Map<String, dynamic>`<br>`{ assertionHeld: Boolean, stopRequested: Boolean }` | Syncs current native state on app startup. |
 | `ackStopRequest` | None | `void` | Acknowledges and clears pending stop request flag on native side. |
+| `requestNotificationPermission` | None | `Boolean` | Requests Android 13+ `POST_NOTIFICATIONS`. Always `true` on iOS and below API 33. |
 
 #### Native → Dart (Events)
 | Event | Arguments | Description |

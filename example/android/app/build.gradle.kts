@@ -19,7 +19,7 @@ android {
         applicationId = "io.github.toyaji.continued_task_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // 플러그인의 동작 하한과 같다 — 포그라운드 서비스 기반이라 API 26 미만은 지원하지 않는다.
+        // Matches the plugin's floor: the foreground service requires API 26+.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
