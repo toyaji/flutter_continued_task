@@ -146,6 +146,31 @@ class ContinuedTaskForegroundServiceTest {
         assertFalse(ContinuedTaskForegroundService.isAssertionHeld)
     }
 
+    // ─────────────────────── 앱 강제 종료 정리 ───────────────────────
+
+    @Test
+    fun `최근 앱에서 밀어내면 서비스를 정리한다`() {
+        val service = buildService()
+        service.onStartCommand(intent(ContinuedTaskForegroundService.ACTION_START), 0, 1)
+        events.clear()
+
+        service.onTaskRemoved(null)
+
+        assertFalse(ContinuedTaskForegroundService.isAssertionHeld)
+        assertEquals(listOf("assertionLost"), events)
+    }
+
+    /** 정리는 사용자 중단이 아니다 — 중단 의사로 기록되면 다음 실행이 멈춘다. */
+    @Test
+    fun `밀어내기는 중단 의사로 기록하지 않는다`() {
+        val service = buildService()
+        service.onStartCommand(intent(ContinuedTaskForegroundService.ACTION_START), 0, 1)
+
+        service.onTaskRemoved(null)
+
+        assertFalse(stopRequestFlag())
+    }
+
     // ───────────────────────── 시스템 회수 ─────────────────────────
 
     /**

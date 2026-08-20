@@ -108,6 +108,12 @@ class ContinuedTaskForegroundService : Service() {
         intent.getStringExtra(EXTRA_CHANNEL_DESC)?.let { currentChannelDesc = it }
     }
 
+    /** `android:stopWithTask` 기본값이 false라 작업이 제거돼도 서비스는 남는다. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopSelfCompat()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onTimeout(startId: Int, fgsType: Int) {
         eventListener?.invoke("timeout")
         stopSelfCompat()
