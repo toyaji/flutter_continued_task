@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint_and_test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          cd example && flutter pub get
+
+      - name: Prevent lint ignores
+        # bin/ is exempt: the setup CLI legitimately prints to stdout.
+        run: |
+          if grep -rnw 'lib/' 'test/' -e 'ignore_for_file'; then
+            echo "::error::Using 'ignore_for_file' to bypass lint rules is prohibited. Fix the underlying lint issues."
+            exit 1
+          fi
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  android_build:
+    name: Android Build & Native Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          cd example && flutter pub get
+
+      - name: Build Android example
+        working-directory: example
+        run: flutter build apk --release
+
+      - name: Run plugin unit tests (Robolectric)
+        working-directory: example/android
+        run: ./gradlew :flutter_continued_task:testDebugUnitTest
+
+  ios_build:
+    name: iOS Build
+    # BGContinuedProcessingTask is referenced unconditionally, so the iOS 26 SDK
+    # is required to compile — not just to run.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          cd example && flutter pub get
+
+      - name: Build iOS example
+        working-directory: example
+        run: flutter build ios --no-codesign
+
+  pub_publish_check:
+    name: Pub.dev Publish Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify publishing
+        run: flutter pub publish --dry-run
+
+      - name: Score with pana
+        run: |
+          dart pub global activate pana
+          dart pub global run pana --no-warning --exit-code-threshold 0 .
