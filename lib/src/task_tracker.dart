@@ -13,22 +13,43 @@ import 'models/continued_task_config.dart';
 class TaskTracker {
   /// Creates a [TaskTracker] and sets up initial state.
   ///
-  /// [configBuilder] receives the current `done` and `total` count to construct
-  /// the [ContinuedTaskConfig] dynamically.
+  /// - Pass [title] for simple auto-formatting: `"$title ($done/$total)"`.
+  /// - Pass [titleBuilder] for custom title formatting.
+  /// - Pass [baseConfig] for static metadata (channel name, icon, taskId, etc.).
   TaskTracker({
-    required this.configBuilder,
+    this.title = 'Task in progress',
+    this.titleBuilder,
+    this.subtitle,
+    this.subtitleBuilder,
+    this.baseConfig = const ContinuedTaskConfig(),
+    ContinuedTaskConfig Function(int done, int total)? configBuilder,
     this.onUserCancel,
     this.onTimeout,
     this.onAssertionChanged,
     bool autoSyncNativeState = true,
-  }) {
+  }) : _configBuilder = configBuilder {
     if (autoSyncNativeState) {
       unawaited(syncNativeState());
     }
   }
 
-  /// Dynamic builder to create task configuration from progress.
-  final ContinuedTaskConfig Function(int done, int total) configBuilder;
+  /// Default title prefix or text used when [titleBuilder] is not provided.
+  final String title;
+
+  /// Custom title builder receiving (done, total).
+  final String Function(int done, int total)? titleBuilder;
+
+  /// Subtitle displayed on notifications.
+  final String? subtitle;
+
+  /// Custom subtitle builder receiving (done, total).
+  final String Function(int done, int total)? subtitleBuilder;
+
+  /// Base static configuration (channel name, icon, taskId, iosTaskIdentifier, etc.).
+  final ContinuedTaskConfig baseConfig;
+
+  /// Optional full configuration builder (kept for advanced usage / backward compatibility).
+  final ContinuedTaskConfig Function(int done, int total)? _configBuilder;
 
   /// Callback triggered when the user taps "Cancel" on system notifications.
   final Future<void> Function()? onUserCancel;
@@ -150,7 +171,7 @@ class TaskTracker {
     final done = (_batchTotal - unfinished).clamp(0, _batchTotal);
 
     if (!_submitted) {
-      final config = configBuilder(done, _batchTotal.clamp(1, 999999));
+      final config = _buildConfig(done, _batchTotal.clamp(1, 999999));
       _activeTask = await ContinuedTask.start(
         config: config,
         onUserCancel: () => onUserCancel?.call(),
@@ -178,7 +199,7 @@ class TaskTracker {
 
   Future<void> _updateProgress({required int done, required int total}) async {
     if (_activeTask != null && !_isDisposed) {
-      final config = configBuilder(done, total.clamp(1, 999999));
+      final config = _buildConfig(done, total.clamp(1, 999999));
       await _activeTask!.update(
         progress: done,
         maxProgress: total.clamp(1, 999999),
@@ -186,6 +207,27 @@ class TaskTracker {
         subtitle: config.subtitle,
       );
     }
+  }
+
+  ContinuedTaskConfig _buildConfig(int done, int total) {
+    if (_configBuilder != null) {
+      return _configBuilder!(done, total);
+    }
+
+    final resolvedTitle = titleBuilder != null
+        ? titleBuilder!(done, total)
+        : (total > 0 ? '$title ($done/$total)' : title);
+
+    final resolvedSubtitle = subtitleBuilder != null
+        ? subtitleBuilder!(done, total)
+        : (subtitle ?? (total > 0 ? '$done/$total' : null));
+
+    return baseConfig.copyWith(
+      title: resolvedTitle,
+      subtitle: resolvedSubtitle,
+      initialProgress: done,
+      maxProgress: total.clamp(1, 999999),
+    );
   }
 
   void _resetBatch() {

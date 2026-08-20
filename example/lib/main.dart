@@ -72,16 +72,10 @@ class _TrackerDemoTabState extends State<TrackerDemoTab> {
   void initState() {
     super.initState();
     _tracker = ContinuedTask.track(
-      configBuilder: (done, total) => ContinuedTaskConfig(
+      title: 'Uploading Photos',
+      baseConfig: const ContinuedTaskConfig(
         taskId: 'example_tracker_task',
-        title: total > 0 ? 'Uploading Photos ($done/$total)' : 'Uploading Photos',
-        subtitle: total > 0 ? '$done/$total' : null,
-        initialProgress: done,
-        maxProgress: total.clamp(1, 999999),
-        allowCancel: true,
-        cancelActionLabel: 'Cancel',
         androidNotificationIcon: 'upload',
-        androidChannelId: 'upload_progress',
         androidChannelName: 'Photo Upload',
         androidChannelDescription: 'Shows progress while uploading photos',
         iosTaskIdentifier: 'dev.flutter.flutterContinuedTaskExample.task',

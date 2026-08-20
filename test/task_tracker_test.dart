@@ -78,10 +78,7 @@ void main() {
     final mock = _RecordingPlatform(isSupported: false);
     ContinuedTaskPlatform.instance = mock;
     final tracker = ContinuedTask.track(
-      configBuilder: (done, total) => ContinuedTaskConfig(
-        taskId: 'test_task',
-        title: '$done/$total',
-      ),
+      title: 'Testing',
       autoSyncNativeState: false,
     );
 
@@ -101,11 +98,8 @@ void main() {
       mock = _RecordingPlatform(startResult: true);
       ContinuedTaskPlatform.instance = mock;
       tracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-          maxProgress: total,
-        ),
+        title: 'Testing',
+        baseConfig: const ContinuedTaskConfig(taskId: 'test_task'),
         autoSyncNativeState: false,
       );
     });
@@ -186,10 +180,7 @@ void main() {
       final rejectingMock = _RecordingPlatform(startResult: false);
       ContinuedTaskPlatform.instance = rejectingMock;
       final rejectingTracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         autoSyncNativeState: false,
       );
 
@@ -216,10 +207,7 @@ void main() {
       final rejectingMock = _RecordingPlatform(startResult: false);
       ContinuedTaskPlatform.instance = rejectingMock;
       final rejectingTracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onAssertionChanged: (value) => held = value,
         autoSyncNativeState: false,
       );
@@ -233,10 +221,7 @@ void main() {
     test('Submitted state does not imply assertion acquired - only native events confirm', () async {
       final held = <bool>[];
       final holdingTracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onAssertionChanged: held.add,
         autoSyncNativeState: false,
       );
@@ -256,10 +241,7 @@ void main() {
       var timedOut = false;
       var cancelCalled = false;
       final timeoutTracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onUserCancel: () async => cancelCalled = true,
         onTimeout: () => timedOut = true,
         autoSyncNativeState: false,
@@ -279,10 +261,7 @@ void main() {
     test('User cancel notification action triggers onUserCancel', () async {
       var cancelCalled = false;
       final cancelTracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onUserCancel: () async => cancelCalled = true,
         autoSyncNativeState: false,
       );
@@ -291,6 +270,19 @@ void main() {
       mock.emit('stopRequested');
 
       check(cancelCalled).isTrue();
+    });
+
+    test('Auto-formats title with progress and supports custom titleBuilder', () async {
+      final customTracker = ContinuedTask.track(
+        titleBuilder: (done, total) => 'Custom: $done of $total',
+        autoSyncNativeState: false,
+      );
+
+      await customTracker.sync(5);
+      check(mock.startedConfig!.title).equals('Custom: 0 of 5');
+
+      await customTracker.sync(3);
+      check(mock.updateArgs.last['title']).equals('Custom: 2 of 5');
     });
 
     test('dispose safely stops active task and resets state', () async {
@@ -316,10 +308,7 @@ void main() {
       ContinuedTaskPlatform.instance = mock;
       final held = <bool>[];
       final tracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onAssertionChanged: held.add,
         autoSyncNativeState: true,
       );
@@ -342,10 +331,7 @@ void main() {
       ContinuedTaskPlatform.instance = mock;
       var stopHandled = false;
       ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         onUserCancel: () async => stopHandled = true,
         autoSyncNativeState: true,
       );
@@ -366,10 +352,7 @@ void main() {
       final mock = _RecordingPlatform(startResult: true);
       ContinuedTaskPlatform.instance = mock;
       final tracker = ContinuedTask.track(
-        configBuilder: (done, total) => ContinuedTaskConfig(
-          taskId: 'test_task',
-          title: '$done/$total',
-        ),
+        title: 'Testing',
         autoSyncNativeState: false,
       );
 

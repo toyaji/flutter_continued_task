@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 @immutable
 class ContinuedTaskConfig {
   const ContinuedTaskConfig({
-    required this.title,
+    this.title = 'Task in progress',
     this.taskId = 'default_task',
     this.subtitle,
     this.initialProgress = 0,
@@ -58,6 +58,39 @@ class ContinuedTaskConfig {
 
   /// iOS `BGContinuedProcessingTask` identifier (must match `BGTaskSchedulerPermittedIdentifiers` in `Info.plist`).
   final String? iosTaskIdentifier;
+
+  /// Creates a copy of this config with the given fields replaced.
+  ContinuedTaskConfig copyWith({
+    String? taskId,
+    String? title,
+    String? subtitle,
+    int? initialProgress,
+    int? maxProgress,
+    bool? indeterminate,
+    bool? allowCancel,
+    String? cancelActionLabel,
+    String? androidNotificationIcon,
+    String? androidChannelId,
+    String? androidChannelName,
+    String? androidChannelDescription,
+    String? iosTaskIdentifier,
+  }) {
+    return ContinuedTaskConfig(
+      taskId: taskId ?? this.taskId,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      initialProgress: initialProgress ?? this.initialProgress,
+      maxProgress: maxProgress ?? this.maxProgress,
+      indeterminate: indeterminate ?? this.indeterminate,
+      allowCancel: allowCancel ?? this.allowCancel,
+      cancelActionLabel: cancelActionLabel ?? this.cancelActionLabel,
+      androidNotificationIcon: androidNotificationIcon ?? this.androidNotificationIcon,
+      androidChannelId: androidChannelId ?? this.androidChannelId,
+      androidChannelName: androidChannelName ?? this.androidChannelName,
+      androidChannelDescription: androidChannelDescription ?? this.androidChannelDescription,
+      iosTaskIdentifier: iosTaskIdentifier ?? this.iosTaskIdentifier,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {

@@ -63,37 +63,36 @@ dependencies:
 
 ## 🛠️ Platform Setup
 
-### 1. Android Setup
+### 1. Android Setup (Zero-Config 🎉)
 
-Add the required foreground service permissions to `android/app/src/main/AndroidManifest.xml`:
+**No manual `AndroidManifest.xml` edits required!**  
+All required permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `POST_NOTIFICATIONS`) and the foreground service component are **automatically merged** into your final APK/AAB during the build.
 
-```xml
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Required for Android 9+ (API 28+) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Required for Android 14+ (API 34+) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <!-- Required for Android 13+ (API 33+) Notification Permission -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+> **Tip for Android 13+ (API 33+)**:  
+> To display progress notifications to the user, ensure your app requests runtime notification permission (e.g. using `permission_handler` or your preferred permission library).
 
-    <application ...>
-        <!-- flutter_continued_task Foreground Service is auto-manifest-merged! -->
-    </application>
-</manifest>
-```
+---
 
 ### 2. iOS Setup
 
-iOS requires `BGContinuedProcessingTask` permitted identifiers in `ios/Runner/Info.plist`:
+#### Option A: Automatic CLI Setup (Recommended ⚡)
+Run the built-in setup script from your project root to automatically configure `ios/Runner/Info.plist`:
+
+```bash
+dart run flutter_continued_task:setup
+```
+
+#### Option B: Manual Setup
+Add `UIBackgroundModes` with `processing` and your task identifier to `ios/Runner/Info.plist`:
 
 ```xml
-<key>BGTaskSchedulerPermittedIdentifiers</key>
-<array>
-    <string>your.bundle.id.upload</string>
-</array>
 <key>UIBackgroundModes</key>
 <array>
     <string>processing</string>
+</array>
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>dev.flutter.continued_task</string>
 </array>
 ```
 
@@ -103,8 +102,25 @@ iOS requires `BGContinuedProcessingTask` permitted identifiers in `ios/Runner/In
 
 ### Approach 1: High-Level API (`ContinuedTask.track`) — *Recommended*
 
-The easiest and most robust way. Create a tracker once, then simply call `tracker.sync(remainingCount)` whenever your queue changes. Everything else is automated:
+The easiest and most robust way. Create a tracker once, then simply call `tracker.sync(remainingCount)` whenever your queue changes. Everything else (lifecycle start/update/stop, progress calculation, microtask IPC coalescing) is completely automated.
 
+#### 1. Minimal (1-liner with auto progress formatting)
+```dart
+final tracker = ContinuedTask.track(
+  title: 'Uploading Photos', // Auto-formats to "Uploading Photos (done/total)"
+  onUserCancel: () => cancelUploads(),
+);
+```
+
+#### 2. Custom Title Formatting (`titleBuilder`)
+```dart
+final tracker = ContinuedTask.track(
+  titleBuilder: (done, total) => '$done of $total photos uploaded',
+  onUserCancel: () => cancelUploads(),
+);
+```
+
+#### 3. Custom Metadata & Notifications (`baseConfig`)
 ```dart
 import 'package:flutter_continued_task/flutter_continued_task.dart';
 
@@ -113,22 +129,14 @@ class UploadService {
 
   void initialize() {
     _tracker = ContinuedTask.track(
-      configBuilder: (done, total) => ContinuedTaskConfig(
-        taskId: 'upload_task',
-        title: total > 0 ? 'Uploading Photos ($done/$total)' : 'Uploading Photos',
-        subtitle: total > 0 ? '$done/$total' : null,
-        initialProgress: done,
-        maxProgress: total.clamp(1, 999999),
-        allowCancel: true,
-        cancelActionLabel: 'Cancel',
+      title: 'Uploading Photos',
+      baseConfig: const ContinuedTaskConfig(
         androidNotificationIcon: 'upload', // Built-in: 'upload', 'download', 'sync', 'processing'
-        androidChannelId: 'upload_progress',
-        androidChannelName: 'Upload Progress',
-        iosTaskIdentifier: 'your.bundle.id.upload',
+        androidChannelName: 'Photo Uploads',
       ),
       onUserCancel: () async {
         print('User tapped cancel on notification!');
-        // Pause or cancel your internal upload queue
+        // Stop or pause your internal work queue
       },
       onTimeout: () {
         print('OS timeout reached (Android 6h limit)');
@@ -172,7 +180,6 @@ final task = await ContinuedTask.start(
     title: 'Processing Video',
     maxProgress: 100,
     allowCancel: true,
-    iosTaskIdentifier: 'your.bundle.id.upload',
   ),
   onUserCancel: () => print('User canceled'),
   onTimeout: () => print('Timed out'),
@@ -185,6 +192,25 @@ await task?.update(progress: 45, maxProgress: 100, subtitle: '45%');
 // 4. Stop when finished
 await task?.stop();
 ```
+
+---
+
+## ⚙️ Configuration Reference (`ContinuedTaskConfig`)
+
+All properties have sensible defaults and are completely optional:
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | `String` | `'Task in progress'` | Main title displayed on notifications and lock screen. |
+| `subtitle` | `String?` | `null` | Secondary text or description. |
+| `allowCancel` | `bool` | `true` | Displays a user "Cancel" action button on the system notification. |
+| `cancelActionLabel`| `String` | `'Cancel'` | Action button text. |
+| `androidNotificationIcon` | `String?` | `null` | Android notification icon resource or keyword (`'upload'`, `'download'`, `'sync'`, `'processing'`). |
+| `androidChannelId` | `String` | `'continued_task_channel'` | Android notification channel ID. |
+| `androidChannelName` | `String` | `'Background Task'` | Android notification category name in OS settings. |
+| `androidChannelDescription` | `String` | `'Shows ongoing progress...'` | Android notification channel description. |
+| `iosTaskIdentifier`| `String?` | `null` | iOS `BGContinuedProcessingTask` ID (must match `Info.plist`). |
+| `indeterminate` | `bool` | `false` | Shows an indeterminate spinner instead of a progress bar. |
 
 ---
 

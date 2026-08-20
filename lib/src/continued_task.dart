@@ -178,14 +178,28 @@ class ContinuedTask {
 
   /// Creates a [TaskTracker] that manages start, update, stop, and IPC
   /// coalescing automatically based on remaining task count changes.
+  ///
+  /// - Pass [title] for simple auto-formatting: `"$title ($done/$total)"`.
+  /// - Pass [titleBuilder] for custom title formatting.
+  /// - Pass [baseConfig] for static metadata (channel name, icon, taskId, etc.).
   static TaskTracker track({
-    required ContinuedTaskConfig Function(int done, int total) configBuilder,
+    String title = 'Task in progress',
+    String Function(int done, int total)? titleBuilder,
+    String? subtitle,
+    String Function(int done, int total)? subtitleBuilder,
+    ContinuedTaskConfig baseConfig = const ContinuedTaskConfig(),
+    ContinuedTaskConfig Function(int done, int total)? configBuilder,
     Future<void> Function()? onUserCancel,
     void Function()? onTimeout,
     void Function(bool held)? onAssertionChanged,
     bool autoSyncNativeState = true,
   }) {
     return TaskTracker(
+      title: title,
+      titleBuilder: titleBuilder,
+      subtitle: subtitle,
+      subtitleBuilder: subtitleBuilder,
+      baseConfig: baseConfig,
       configBuilder: configBuilder,
       onUserCancel: onUserCancel,
       onTimeout: onTimeout,
