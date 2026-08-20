@@ -103,11 +103,7 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         }
 
         return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                ctx.startForegroundService(intent)
-            } else {
-                ctx.startService(intent)
-            }
+            ctx.startForegroundService(intent)
             true
         } catch (e: Exception) {
             val isBgBlocked = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
