@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_continued_task/flutter_continued_task.dart';
 
+import 'concurrent_demo_tab.dart';
+
 void main() => runApp(const ExampleApp());
 
 class ExampleApp extends StatelessWidget {
@@ -24,18 +26,22 @@ class MainTabScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('flutter_continued_task Example'),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.auto_mode), text: 'TaskTracker (Auto)'),
               Tab(icon: Icon(Icons.touch_app), text: 'ContinuedTask (Manual)'),
+              Tab(icon: Icon(Icons.layers), text: 'Concurrent'),
             ],
           ),
         ),
-        body: const TabBarView(children: [TrackerDemoTab(), ManualDemoTab()]),
+        body: const TabBarView(
+          children: [TrackerDemoTab(), ManualDemoTab(), ConcurrentDemoTab()],
+        ),
       ),
     );
   }

@@ -47,8 +47,9 @@ class ContinuedTask {
   Future<void>? _activeUpdateJob;
 
   void _initEventHandling() {
-    ContinuedTaskPlatform.instance.setEventHandlers(
-      onEvent: (event) {
+    ContinuedTaskPlatform.instance.setTaskEventHandler(
+      taskId,
+      (event) {
         switch (event) {
           case 'assertionAcquired':
             _setAssertionHeld(true);
@@ -168,6 +169,9 @@ class ContinuedTask {
       debugPrint('[ContinuedTask] Failed to stop task: $e');
     } finally {
       _setAssertionHeld(false);
+      ContinuedTaskPlatform.instance.removeTaskEventHandler(taskId);
+      if (identical(_activeTasks[taskId], this)) _activeTasks.remove(taskId);
+      if (identical(_currentTask, this)) _currentTask = null;
     }
   }
 
@@ -232,6 +236,7 @@ class ContinuedTask {
     Future<void> Function()? onUserCancel,
     void Function()? onTimeout,
     void Function(bool held)? onAssertionChanged,
+    bool allowConcurrent = false,
     bool autoSyncNativeState = true,
   }) {
     return TaskTracker(
@@ -244,6 +249,7 @@ class ContinuedTask {
       onUserCancel: onUserCancel,
       onTimeout: onTimeout,
       onAssertionChanged: onAssertionChanged,
+      allowConcurrent: allowConcurrent,
       autoSyncNativeState: autoSyncNativeState,
     );
   }
@@ -252,14 +258,28 @@ class ContinuedTask {
   ///
   /// - Returns a `ContinuedTask` on success.
   /// - Returns `null` if rejected (e.g. background execution restrictions).
+  /// Set [allowConcurrent] to let this task run alongside tasks that use a
+  /// different [ContinuedTaskConfig.taskId], each with its own notification and
+  /// its own "Cancel" action.
+  ///
+  /// It defaults to `false`, which keeps the 0.1.x behaviour: starting a task
+  /// stops whatever task was running, whatever its id. Existing apps therefore
+  /// need no changes.
   static Future<ContinuedTask?> start({
     required ContinuedTaskConfig config,
+    bool allowConcurrent = false,
     void Function()? onUserCancel,
     void Function()? onTimeout,
     void Function(bool held)? onAssertionChanged,
   }) async {
-    // If an existing task is running, clean it up first
-    if (_currentTask != null && !_currentTask!._isStopped) {
+    if (allowConcurrent) {
+      // Only the same id replaces — other ids keep running.
+      final existing = _activeTasks[config.taskId];
+      if (existing != null && !existing._isStopped) {
+        await existing.stop();
+      }
+    } else if (_currentTask != null && !_currentTask!._isStopped) {
+      // Legacy: one task at a time, regardless of id.
       await _currentTask!.stop();
     }
 
@@ -274,9 +294,16 @@ class ContinuedTask {
       onTimeout: onTimeout,
       onAssertionChanged: onAssertionChanged,
     );
+    _activeTasks[config.taskId] = task;
     _currentTask = task;
     return task;
   }
+
+  /// Tasks that are currently running, keyed by task id.
+  static final Map<String, ContinuedTask> _activeTasks = {};
+
+  /// The task with the given id, or `null` when it is not running.
+  static ContinuedTask? taskOf(String taskId) => _activeTasks[taskId];
 
   /// Requests notification permission from the user (Android 13+ runtime POST_NOTIFICATIONS, iOS alert/badge/sound).
   ///
@@ -286,23 +313,33 @@ class ContinuedTask {
   }
 
   /// Syncs and retrieves the current native service state on app startup.
-  static Future<ContinuedTaskNativeState?> syncNativeState() {
-    return ContinuedTaskPlatform.instance.syncState();
+  ///
+  /// Pass [taskId] to ask about one task; without it the aggregate state is
+  /// returned, as in 0.1.x.
+  static Future<ContinuedTaskNativeState?> syncNativeState({String? taskId}) {
+    return taskId == null
+        ? ContinuedTaskPlatform.instance.syncState()
+        : ContinuedTaskPlatform.instance.syncStateFor(taskId);
   }
 
   /// Acknowledges and clears any pending stop request recorded on the native side.
-  static Future<void> ackStopRequest() {
-    return ContinuedTaskPlatform.instance.ackStopRequest();
+  static Future<void> ackStopRequest({String? taskId}) {
+    return taskId == null
+        ? ContinuedTaskPlatform.instance.ackStopRequest()
+        : ContinuedTaskPlatform.instance.ackStopRequestFor(taskId);
   }
 
-  /// Stops the currently running task (or cleans up any dangling native service).
+  /// Stops the running task with [taskId] (or cleans up a dangling native
+  /// service when this isolate holds no handle for it).
   static Future<void> stopCurrentTask({
     String taskId = 'default_task',
     bool success = true,
   }) async {
-    if (_currentTask != null) {
-      await _currentTask!.stop(success: success);
-      _currentTask = null;
+    // Prefer the handle registered for this id. Falling back to "whatever ran
+    // last" would stop another queue's task once ids can coexist.
+    final task = _activeTasks[taskId] ?? _currentTask;
+    if (task != null) {
+      await task.stop(success: success);
     } else {
       await ContinuedTaskPlatform.instance
           .stop(taskId: taskId, success: success);
@@ -313,6 +350,7 @@ class ContinuedTask {
   @visibleForTesting
   static void resetForTesting() {
     _currentTask = null;
+    _activeTasks.clear();
   }
 }
 

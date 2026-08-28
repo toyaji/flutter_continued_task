@@ -26,6 +26,7 @@ class TaskTracker {
     this.onUserCancel,
     this.onTimeout,
     this.onAssertionChanged,
+    this.allowConcurrent = false,
     bool autoSyncNativeState = true,
   }) : _configBuilder = configBuilder {
     if (autoSyncNativeState) {
@@ -59,6 +60,18 @@ class TaskTracker {
 
   /// Callback triggered when OS process assertion status changes (`held = true/false`).
   final void Function(bool held)? onAssertionChanged;
+
+  /// Whether this tracker's task may run alongside tasks with a different
+  /// [ContinuedTaskConfig.taskId], each with its own notification and Cancel
+  /// action.
+  ///
+  /// Defaults to `false`, which is the 0.1.x behaviour: starting a task stops
+  /// whatever ran before it. Turn it on only when your app really wants two
+  /// independent progress notifications.
+  final bool allowConcurrent;
+
+  /// The id of the task this tracker drives.
+  String get taskId => baseConfig.taskId;
 
   // ---------------------------------------------------------------------------
   // Public Properties
@@ -106,7 +119,9 @@ class TaskTracker {
         await _activeTask!.stop(success: false);
         _activeTask = null;
       } else {
-        await ContinuedTask.stopCurrentTask(success: false);
+        // Scope the cleanup to this tracker's id — the global fallback would
+        // stop another tracker's task once ids can coexist.
+        await ContinuedTask.stopCurrentTask(taskId: taskId, success: false);
       }
     }
     _resetBatch();
@@ -115,7 +130,10 @@ class TaskTracker {
   /// Synchronizes and recovers native service state on app startup if needed.
   Future<void> syncNativeState() async {
     if (!ContinuedTask.isSupported || _isDisposed) return;
-    final state = await ContinuedTask.syncNativeState();
+    // Ask about this task only when tasks can coexist; otherwise keep the
+    // aggregate query 0.1.x used.
+    final state = await ContinuedTask.syncNativeState(
+        taskId: allowConcurrent ? taskId : null);
     if (state == null) return;
 
     final serviceRunning = state.assertionHeld;
@@ -128,7 +146,8 @@ class TaskTracker {
 
     if (state.stopRequested) {
       await onUserCancel?.call();
-      await ContinuedTask.ackStopRequest();
+      await ContinuedTask.ackStopRequest(
+          taskId: allowConcurrent ? taskId : null);
     }
   }
 
@@ -175,7 +194,7 @@ class TaskTracker {
           await _activeTask!.stop(success: true);
           _activeTask = null;
         } else {
-          await ContinuedTask.stopCurrentTask(success: true);
+          await ContinuedTask.stopCurrentTask(taskId: taskId, success: true);
         }
       }
       _resetBatch();
@@ -192,6 +211,7 @@ class TaskTracker {
       final config = _buildConfig(done, _batchTotal.clamp(1, 999999));
       _activeTask = await ContinuedTask.start(
         config: config,
+        allowConcurrent: allowConcurrent,
         onUserCancel: () => onUserCancel?.call(),
         onTimeout: () {
           _submitted = false;

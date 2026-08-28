@@ -208,6 +208,73 @@ await task?.stop();
 
 ---
 
+## 🔀 Concurrent Tasks
+
+Two or more tasks can run side by side, each with its own notification, its own
+Cancel action and its own progress. Opt in with `allowConcurrent`:
+
+```dart
+final photos = ContinuedTask.track(
+  title: 'Uploading photos',
+  allowConcurrent: true,
+  baseConfig: const ContinuedTaskConfig(taskId: 'photos'),
+  onUserCancel: () async => photoQueue.stop(),
+);
+
+final videos = ContinuedTask.track(
+  title: 'Uploading videos',
+  allowConcurrent: true,
+  baseConfig: const ContinuedTaskConfig(taskId: 'videos'),
+  onUserCancel: () async => videoQueue.stop(),
+);
+```
+
+Left at its default (`false`), starting a task stops whatever ran before it —
+the 0.1.x behaviour — so existing apps need no changes.
+
+### What concurrency does and does not buy you
+
+Separate tasks give you **separate notifications and separate Cancel actions**.
+They do **not** give you more background time: process lifetime and force-stop
+are per app on both platforms.
+
+| | Android | iOS |
+| :--- | :--- | :--- |
+| Mechanism | one `ForegroundService` component per task | one `BGContinuedProcessingTask` identifier per task |
+| Slots available | 4 (declared in the plugin manifest) | as many identifiers as you declare in `Info.plist` |
+| Cancel | per notification | per task in the system progress UI |
+| Time budget | **shared by all of the app's `dataSync` services** (6h/24h) | **per task** (measured: 900 s each) |
+| Force-stop | Task Manager stops the whole app, no callback | closing the app in the switcher cancels everything, no callback |
+
+### Android: keep it to three visible tasks
+
+The system bundles an app's notifications once there are four or more, which
+hides each task's Cancel action inside the collapsed group. Three concurrent
+tasks still show individually.
+
+If the user denies the notification permission, foreground services keep
+running but appear only in the Task Manager, which offers a single app-wide
+Stop — per-task cancelling is then unavailable. Keep an in-app control for
+stopping work.
+
+### iOS: declare one identifier per concurrent task
+
+`dart run flutter_continued_task:setup` writes the first identifier. Add one
+entry per additional concurrent task to `BGTaskSchedulerPermittedIdentifiers`:
+
+```xml
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>com.example.app.task</string>
+    <string>com.example.app.task_02</string>
+</array>
+```
+
+Tasks without an explicit `iosTaskIdentifier` take the next free entry in
+declaration order, so a single-task app always lands on the first one.
+
+---
+
 ## ⚙️ Configuration Reference (`ContinuedTaskConfig`)
 
 All properties have sensible defaults and are completely optional:
@@ -222,7 +289,7 @@ All properties have sensible defaults and are completely optional:
 | `androidChannelId` | `String` | `'continued_task_channel'` | Android notification channel ID. |
 | `androidChannelName` | `String` | `'Background Task'` | Android notification category name in OS settings. |
 | `androidChannelDescription` | `String` | `'Shows ongoing progress...'` | Android notification channel description. |
-| `iosTaskIdentifier`| `String?` | `null` | iOS `BGContinuedProcessingTask` ID (must match `Info.plist`). |
+| `iosTaskIdentifier`| `String?` | `null` | iOS `BGContinuedProcessingTask` ID (must match `Info.plist`). Leave null to take the next free permitted identifier. |
 | `indeterminate` | `bool` | `false` | Shows an indeterminate spinner instead of a progress bar. |
 
 ---

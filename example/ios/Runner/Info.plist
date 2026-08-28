@@ -8,6 +8,9 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>io.github.toyaji.continuedTaskExample.task</string>
+		<string>io.github.toyaji.continuedTaskExample.task_02</string>
+		<string>io.github.toyaji.continuedTaskExample.task_03</string>
+		<string>io.github.toyaji.continuedTaskExample.task_04</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

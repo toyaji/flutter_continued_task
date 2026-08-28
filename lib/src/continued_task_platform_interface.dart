@@ -60,15 +60,47 @@ abstract class ContinuedTaskPlatform extends PlatformInterface {
     throw UnimplementedError('syncState() has not been implemented.');
   }
 
+  /// Syncs and retrieves native state for a single task.
+  ///
+  /// Added in 0.2.0 for concurrent tasks. The default implementation falls back
+  /// to [syncState], so existing platform implementations keep working
+  /// unchanged — they simply report the aggregate state for every task.
+  Future<ContinuedTaskNativeState?> syncStateFor(String taskId) => syncState();
+
   /// Clears the acknowledged stop request flag on the native side.
   Future<void> ackStopRequest() {
     throw UnimplementedError('ackStopRequest() has not been implemented.');
   }
 
-  /// Registers native lifecycle event handlers.
+  /// Clears the stop request flag recorded for a single task.
+  ///
+  /// Added in 0.2.0. Defaults to [ackStopRequest] for older implementations.
+  Future<void> ackStopRequestFor(String taskId) => ackStopRequest();
+
+  /// Registers a global native lifecycle event handler.
+  ///
+  /// The handler receives every event regardless of which task produced it.
+  /// Kept for backward compatibility; prefer [setTaskEventHandler] when more
+  /// than one task can run at a time.
   void setEventHandlers({
     required void Function(String event) onEvent,
   }) {
     throw UnimplementedError('setEventHandlers() has not been implemented.');
   }
+
+  /// Registers an event handler scoped to a single [taskId].
+  ///
+  /// Added in 0.2.0. Without this, every task shares one global handler slot,
+  /// so the last task registered would receive the "Cancel" event meant for
+  /// another task's notification. The default implementation delegates to
+  /// [setEventHandlers], preserving the single-task behaviour.
+  void setTaskEventHandler(
+    String taskId,
+    void Function(String event) onEvent,
+  ) {
+    setEventHandlers(onEvent: onEvent);
+  }
+
+  /// Removes the handler registered by [setTaskEventHandler]. No-op by default.
+  void removeTaskEventHandler(String taskId) {}
 }

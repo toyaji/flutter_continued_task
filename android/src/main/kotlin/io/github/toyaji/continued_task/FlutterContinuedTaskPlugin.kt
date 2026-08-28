@@ -28,11 +28,36 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
     private var activityBinding: ActivityPluginBinding? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var myListener: ((String) -> Unit)? = null
+    private var myListener: ((String, String) -> Unit)? = null
     private var pendingPermissionResult: Result? = null
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 7654
+
+        /**
+         * taskId -> slot. A task keeps its slot for as long as it runs, so its
+         * notification and Cancel action stay on the same component.
+         */
+        private val slotByTaskId = linkedMapOf<String, Int>()
+
+        /** Assigns (or reuses) the slot that serves [taskId], or null if full. */
+        @Synchronized
+        private fun slotFor(taskId: String): Int? {
+            slotByTaskId[taskId]?.let { return it }
+            val used = slotByTaskId.values.toSet()
+            for (slot in 0 until ContinuedTaskForegroundService.SLOT_COUNT) {
+                if (!used.contains(slot)) {
+                    slotByTaskId[taskId] = slot
+                    return slot
+                }
+            }
+            return null
+        }
+
+        @Synchronized
+        private fun releaseSlot(taskId: String) {
+            slotByTaskId.remove(taskId)
+        }
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -40,8 +65,10 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "io.github.toyaji.continued_task/channel")
         channel.setMethodCallHandler(this)
 
-        val listener: (String) -> Unit = { event ->
-            mainHandler.post { channel.invokeMethod(event, null) }
+        // The task id travels with every event: with a single listener and no
+        // id, whichever task registered last received another task's Cancel.
+        val listener: (String, String) -> Unit = { event, taskId ->
+            mainHandler.post { channel.invokeMethod(event, mapOf("taskId" to taskId)) }
         }
         myListener = listener
         ContinuedTaskForegroundService.eventListener = listener
@@ -62,33 +89,66 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
                 result.success(success)
             }
             "update" -> {
-                val success = startServiceWithAction(ContinuedTaskForegroundService.ACTION_UPDATE, call.arguments as? Map<String, Any?>)
+                val args = call.arguments as? Map<String, Any?>
+                val taskId = (args?.get("taskId") as? String) ?: "default_task"
+                val slot = slotFor(taskId)
+                // Update the live instance directly. Going through
+                // startForegroundService on every tick made SystemUI rebuild the
+                // status bar icon row, which looks like flickering.
+                val applied = slot != null &&
+                    ContinuedTaskForegroundService.applyUpdate(slot, args)
+                val success = if (applied) {
+                    true
+                } else {
+                    startServiceWithAction(ContinuedTaskForegroundService.ACTION_START, args)
+                }
                 result.success(success)
             }
             "stop" -> {
-                stopService()
+                val taskId = (call.arguments as? Map<*, *>)?.get("taskId") as? String
+                    ?: "default_task"
+                stopService(taskId)
                 result.success(null)
             }
             "requestNotificationPermission" -> {
                 requestNotificationPermission(result)
             }
             "syncState" -> {
+                val taskId = (call.arguments as? Map<*, *>)?.get("taskId") as? String
                 val ctx = context
                 val prefs = ctx?.getSharedPreferences(ContinuedTaskForegroundService.PREFS_NAME, Context.MODE_PRIVATE)
-                val stopRequested = prefs?.getBoolean(ContinuedTaskForegroundService.KEY_STOP_REQUESTED, false) ?: false
+                // No task id: the 0.1.x aggregate view.
+                val held = if (taskId == null) {
+                    ContinuedTaskForegroundService.isAssertionHeld
+                } else {
+                    ContinuedTaskForegroundService.isAssertionHeldFor(taskId)
+                }
+                val stopKey = if (taskId == null) {
+                    ContinuedTaskForegroundService.KEY_STOP_REQUESTED
+                } else {
+                    ContinuedTaskForegroundService.stopRequestedKey(taskId)
+                }
+                val stopRequested = prefs?.getBoolean(stopKey, false) ?: false
                 result.success(
                     mapOf(
-                        "assertionHeld" to ContinuedTaskForegroundService.isAssertionHeld,
+                        "assertionHeld" to held,
                         "stopRequested" to stopRequested
                     )
                 )
             }
             "ackStopRequest" -> {
+                val taskId = (call.arguments as? Map<*, *>)?.get("taskId") as? String
                 val ctx = context
-                ctx?.getSharedPreferences(ContinuedTaskForegroundService.PREFS_NAME, Context.MODE_PRIVATE)
+                val editor = ctx?.getSharedPreferences(ContinuedTaskForegroundService.PREFS_NAME, Context.MODE_PRIVATE)
                     ?.edit()
-                    ?.remove(ContinuedTaskForegroundService.KEY_STOP_REQUESTED)
-                    ?.apply()
+                if (taskId == null) {
+                    editor?.remove(ContinuedTaskForegroundService.KEY_STOP_REQUESTED)
+                } else {
+                    editor?.remove(ContinuedTaskForegroundService.stopRequestedKey(taskId))
+                    // Clear the aggregate flag too once every task is acked.
+                    editor?.remove(ContinuedTaskForegroundService.KEY_STOP_REQUESTED)
+                }
+                editor?.apply()
                 result.success(null)
             }
             else -> result.notImplemented()
@@ -150,7 +210,15 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
 
     private fun startServiceWithAction(action: String, args: Map<String, Any?>?): Boolean {
         val ctx = activity ?: context ?: return false
-        val intent = Intent(ctx, ContinuedTaskForegroundService::class.java).apply {
+        val taskId = (args?.get("taskId") as? String) ?: "default_task"
+        val slot = slotFor(taskId) ?: run {
+            android.util.Log.w(
+                "ContinuedTaskPlugin",
+                "No free slot for task '$taskId' (max ${ContinuedTaskForegroundService.SLOT_COUNT})"
+            )
+            return false
+        }
+        val intent = Intent(ctx, ContinuedTaskForegroundService.serviceClassFor(slot)).apply {
             this.action = action
             args?.let { map ->
                 (map["taskId"] as? String)?.let { putExtra(ContinuedTaskForegroundService.EXTRA_TASK_ID, it) }
@@ -180,15 +248,23 @@ class FlutterContinuedTaskPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         }
     }
 
-    private fun stopService() {
+    private fun stopService(taskId: String) {
         val ctx = activity ?: context ?: return
-        val intent = Intent(ctx, ContinuedTaskForegroundService::class.java).apply {
+        val slot = slotFor(taskId) ?: 0
+        val intent = Intent(ctx, ContinuedTaskForegroundService.serviceClassFor(slot)).apply {
             action = ContinuedTaskForegroundService.ACTION_STOP
+            putExtra(ContinuedTaskForegroundService.EXTRA_TASK_ID, taskId)
         }
         try {
-            ctx.startService(intent)
+            // startForegroundService, not startService: a running foreground
+            // service must be reachable while the app itself is in the
+            // background, where startService throws on O+ and the task would
+            // never stop.
+            ctx.startForegroundService(intent)
         } catch (e: Exception) {
             android.util.Log.w("ContinuedTaskPlugin", "Failed to send stop action to service", e)
+        } finally {
+            releaseSlot(taskId)
         }
     }
 

@@ -65,6 +65,22 @@ class MockContinuedTaskPlatform
   void setEventHandlers({required void Function(String event) onEvent}) {
     eventHandler = onEvent;
   }
+
+  /// 0.2.0: per-task routing. The double keeps one slot — every task in these
+  /// tests shares it, which matches the single-task scenarios they cover.
+  @override
+  void setTaskEventHandler(String taskId, void Function(String event) onEvent) {
+    eventHandler = onEvent;
+  }
+
+  @override
+  void removeTaskEventHandler(String taskId) {}
+
+  @override
+  Future<ContinuedTaskNativeState?> syncStateFor(String taskId) => syncState();
+
+  @override
+  Future<void> ackStopRequestFor(String taskId) => ackStopRequest();
 }
 
 void main() {

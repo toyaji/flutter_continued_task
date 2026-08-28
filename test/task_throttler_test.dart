@@ -47,6 +47,19 @@ class SlowMockContinuedTaskPlatform
 
   @override
   void setEventHandlers({required void Function(String event) onEvent}) {}
+
+  @override
+  void setTaskEventHandler(
+      String taskId, void Function(String event) onEvent) {}
+
+  @override
+  void removeTaskEventHandler(String taskId) {}
+
+  @override
+  Future<ContinuedTaskNativeState?> syncStateFor(String taskId) => syncState();
+
+  @override
+  Future<void> ackStopRequestFor(String taskId) => ackStopRequest();
 }
 
 void main() {

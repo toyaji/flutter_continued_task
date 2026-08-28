@@ -6,8 +6,33 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application>
+        <!--
+          One service class per concurrent task slot.
+
+          A foreground service owns exactly one notification, so two tasks that
+          each want their own notification and their own Cancel action need two
+          service components. Slot 0 is what every 0.1.x app already used; the
+          rest stay dormant unless an app opts into concurrent tasks.
+
+          Distinct components also keep the Cancel PendingIntents apart:
+          matching uses Intent.filterEquals, which compares the component but
+          NOT the extras — one class plus a task-id extra would hand every
+          notification the same PendingIntent.
+        -->
         <service
             android:name=".ContinuedTaskForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+        <service
+            android:name=".ContinuedTaskForegroundServiceSlot1"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+        <service
+            android:name=".ContinuedTaskForegroundServiceSlot2"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+        <service
+            android:name=".ContinuedTaskForegroundServiceSlot3"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
     </application>
