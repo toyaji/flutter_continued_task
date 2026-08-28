@@ -210,8 +210,9 @@ await task?.stop();
 
 ## 🔀 Concurrent Tasks
 
-Two or more tasks can run side by side, each with its own notification, its own
-Cancel action and its own progress. Opt in with `allowConcurrent`:
+Need two progress notifications at once — say photo uploads and video uploads —
+each with its own Cancel button? Set `allowConcurrent: true` and give each task
+its own `taskId`:
 
 ```dart
 final photos = ContinuedTask.track(
@@ -229,38 +230,16 @@ final videos = ContinuedTask.track(
 );
 ```
 
-Left at its default (`false`), starting a task stops whatever ran before it —
-the 0.1.x behaviour — so existing apps need no changes.
+Each task shows its own notification, and its Cancel button only stops that
+task. `onUserCancel` fires on the task the user actually cancelled.
 
-### What concurrency does and does not buy you
+**Without `allowConcurrent`, starting a task stops the running one** — the
+default, and what single-task apps want.
 
-Separate tasks give you **separate notifications and separate Cancel actions**.
-They do **not** give you more background time: process lifetime and force-stop
-are per app on both platforms.
+### iOS: one identifier per task
 
-| | Android | iOS |
-| :--- | :--- | :--- |
-| Mechanism | one `ForegroundService` component per task | one `BGContinuedProcessingTask` identifier per task |
-| Slots available | 4 (declared in the plugin manifest) | as many identifiers as you declare in `Info.plist` |
-| Cancel | per notification | per task in the system progress UI |
-| Time budget | **shared by all of the app's `dataSync` services** (6h/24h) | **per task** (measured: 900 s each) |
-| Force-stop | Task Manager stops the whole app, no callback | closing the app in the switcher cancels everything, no callback |
-
-### Android: keep it to three visible tasks
-
-The system bundles an app's notifications once there are four or more, which
-hides each task's Cancel action inside the collapsed group. Three concurrent
-tasks still show individually.
-
-If the user denies the notification permission, foreground services keep
-running but appear only in the Task Manager, which offers a single app-wide
-Stop — per-task cancelling is then unavailable. Keep an in-app control for
-stopping work.
-
-### iOS: declare one identifier per concurrent task
-
-`dart run flutter_continued_task:setup` writes the first identifier. Add one
-entry per additional concurrent task to `BGTaskSchedulerPermittedIdentifiers`:
+Add an entry to `BGTaskSchedulerPermittedIdentifiers` for each task you run at
+the same time (`dart run flutter_continued_task:setup` writes the first one):
 
 ```xml
 <key>BGTaskSchedulerPermittedIdentifiers</key>
@@ -270,8 +249,19 @@ entry per additional concurrent task to `BGTaskSchedulerPermittedIdentifiers`:
 </array>
 ```
 
-Tasks without an explicit `iosTaskIdentifier` take the next free entry in
-declaration order, so a single-task app always lands on the first one.
+Identifiers are handed out in the order they appear, so you don't need to set
+`iosTaskIdentifier` yourself. Android needs no setup.
+
+### Good to know
+
+- **Up to 4 tasks at a time.** Android shows at most 3 notifications
+  individually; from the 4th the system collapses them into a group and each
+  Cancel button moves inside it.
+- **Concurrency doesn't buy more background time.** Two tasks get you two
+  notifications and two Cancel buttons, not a longer runtime — the OS budget
+  belongs to the app.
+- **If notifications are turned off**, work still runs, but there is no Cancel
+  button to show. Keep a way to stop it inside your app.
 
 ---
 
