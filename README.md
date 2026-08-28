@@ -57,7 +57,7 @@ Add `flutter_continued_task` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_continued_task: ^0.1.0
+  flutter_continued_task: ^0.2.0
 ```
 
 ---
