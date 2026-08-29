@@ -41,12 +41,11 @@ class _ConcurrentDemoTabState extends State<ConcurrentDemoTab> {
   void initState() {
     super.initState();
     ContinuedTask.requestNotificationPermission().then((granted) {
-      _log(
-        granted
-            ? '🔔 Notification permission granted'
-            : '🔕 Notification permission DENIED — notifications will not appear, '
-                  'only the Task Manager entry (per-task Cancel becomes impossible)',
-      );
+      // Keep these on one line each: adjacent string continuations are the one
+      // construct older and newer dart format disagree on, and CI runs a newer
+      // toolchain than we develop against.
+      const denied = '🔕 Notification permission DENIED — no Cancel button';
+      _log(granted ? '🔔 Notification permission granted' : denied);
     });
   }
 
