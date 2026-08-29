@@ -22,13 +22,19 @@ import org.robolectric.annotation.Config
 class ContinuedTaskForegroundServiceTest {
 
     private lateinit var events: MutableList<String>
+    private lateinit var eventTaskIds: MutableList<String>
     private lateinit var context: Context
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         events = mutableListOf()
-        ContinuedTaskForegroundService.eventListener = { events.add(it) }
+        eventTaskIds = mutableListOf()
+        // 0.2.0: 이벤트가 어느 태스크의 것인지 함께 온다.
+        ContinuedTaskForegroundService.eventListener = { event, taskId ->
+            events.add(event)
+            eventTaskIds.add(taskId)
+        }
         clearStopRequestFlag()
     }
 
